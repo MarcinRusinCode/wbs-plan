@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gjenkraft WBS Plan</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; color: #1a1a2e; font-size: 13px; }
+
+/* ── Header ── */
+header { background: #1a1a2e; color: #fff; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+header h1 { font-size: 16px; font-weight: 600; letter-spacing: .3px; }
+#auth-bar { display: flex; align-items: center; gap: 10px; }
+#status-dot { width: 8px; height: 8px; border-radius: 50%; background: #6c757d; display: inline-block; }
+#status-dot.online  { background: #28a745; box-shadow: 0 0 6px #28a745; }
+#status-dot.offline { background: #ffc107; }
+#status-text { font-size: 12px; opacity: .85; }
+#user-name { font-size: 12px; font-weight: 600; background: rgba(255,255,255,.12); border-radius: 12px; padding: 2px 10px; }
+.header-btn { padding: 4px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,.3); background: transparent; color: #fff; font-size: 11px; cursor: pointer; font-weight: 600; }
+.header-btn:hover { background: rgba(255,255,255,.1); }
+.header-btn.primary { background: #4a6fa5; border-color: #4a6fa5; }
+.header-btn.primary:hover { background: #3a5f95; }
+
+/* ── Filter bar ── */
+#filter-bar { background: #fff; border-bottom: 1px solid #e2e6ea; padding: 10px 18px; display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; position: sticky; top: 0; z-index: 10; box-shadow: 0 1px 4px rgba(0,0,0,.06); }
+.filter-group { display: flex; flex-direction: column; gap: 3px; }
+.filter-group label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .6px; color: #6c757d; }
+.filter-group select { border: 1px solid #ced4da; border-radius: 6px; padding: 4px 9px; font-size: 12px; background: #fff; cursor: pointer; min-width: 140px; color: #333; outline: none; }
+.filter-group select:focus { border-color: #4a6fa5; }
+#reset-btn { padding: 4px 12px; background: #4a6fa5; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; align-self: flex-end; }
+#reset-btn:hover { background: #3a5f95; }
+#refresh-btn { padding: 4px 12px; background: #28a745; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; align-self: flex-end; display: none; }
+#refresh-btn:hover { background: #218838; }
+#results-count { align-self: flex-end; font-size: 11px; color: #6c757d; padding-bottom: 2px; }
+
+/* ── Table ── */
+#table-wrap { padding: 14px 18px; overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+thead th { background: #1a1a2e; color: #fff; padding: 9px 10px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
+thead th:first-child { width: 36px; text-align: center; }
+tbody tr { border-bottom: 1px solid #f0f2f5; transition: background .1s; }
+tbody tr:hover { background: #f8f9fa; }
+tbody tr.parent-context { background: #f4f6fb; }
+tbody tr.parent-context:hover { background: #ecf0f8; }
+td { padding: 6px 10px; vertical-align: middle; }
+td.level-col { text-align: center; font-weight: 700; color: #6c757d; font-size: 11px; }
+td.wbs-col { font-family: "SF Mono", "Fira Code", monospace; font-size: 11px; color: #4a6fa5; white-space: nowrap; }
+td.task-col { line-height: 1.4; max-width: 340px; }
+td.date-col { white-space: nowrap; font-size: 12px; color: #555; }
+td.resp-col { white-space: nowrap; font-size: 12px; }
+td.status-col { min-width: 160px; }
+td.comments-col { min-width: 180px; }
+
+/* Indentation */
+.indent-1 { padding-left: 2px; font-weight: 700; font-size: 13px; }
+.indent-2 { padding-left: 16px; font-weight: 600; }
+.indent-3 { padding-left: 30px; }
+.indent-4 { padding-left: 46px; }
+.indent-5 { padding-left: 62px; color: #555; font-size: 12px; }
+
+/* Sheet section divider */
+tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-size: 12px; padding: 6px 10px; }
+
+/* Status badges & edit controls */
+.badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .4px; white-space: nowrap; }
+.badge-done        { background: #d4edda; color: #155724; }
+.badge-progress    { background: #cce5ff; color: #004085; }
+.badge-notstarted  { background: #f8d7da; color: #721c24; }
+.badge-mc          { background: #fff3cd; color: #856404; }
+.badge-commissioning { background: #d1ecf1; color: #0c5460; }
+.badge-handover    { background: #e2d9f3; color: #432874; }
+.badge-operation   { background: #d4edda; color: #155724; }
+.badge-procurement { background: #ffeeba; color: #856404; }
+.badge-onhold      { background: #fde2e2; color: #721c24; }
+.badge-other       { background: #e9ecef; color: #495057; }
+
+.status-select { border: 1px solid #ced4da; border-radius: 6px; padding: 3px 6px; font-size: 11px; background: #fff; cursor: pointer; color: #333; outline: none; width: 100%; }
+.status-select:focus { border-color: #4a6fa5; }
+.status-select.saving { opacity: .5; }
+
+.comment-input { border: 1px solid #ced4da; border-radius: 6px; padding: 3px 8px; font-size: 11px; width: 100%; outline: none; color: #333; }
+.comment-input:focus { border-color: #4a6fa5; }
+.comment-input.saving { opacity: .5; }
+
+/* Responsible chip */
+.chip { display: inline-block; background: #e9ecef; border-radius: 10px; padding: 1px 8px; font-size: 11px; color: #495057; }
+
+/* Toast */
+#toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 6px; }
+.toast { padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,.2); animation: fadeIn .2s ease; }
+.toast.success { background: #28a745; }
+.toast.error   { background: #dc3545; }
+.toast.info    { background: #4a6fa5; }
+@keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+/* Loading spinner */
+#loading { text-align: center; padding: 40px; color: #6c757d; font-size: 14px; }
+.spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #e2e6ea; border-top-color: #4a6fa5; border-radius: 50%; animation: spin .8s linear infinite; margin-right: 8px; vertical-align: middle; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+#no-results { text-align: center; padding: 40px; color: #6c757d; font-size: 14px; display: none; }
+
+/* Cache info bar */
+#cache-bar { background: #fff8e1; border-bottom: 1px solid #ffe082; padding: 6px 18px; font-size: 11px; color: #795548; display: none; }
+
+/* Login overlay */
+#login-overlay { position: fixed; inset: 0; background: rgba(26,26,46,.8); display: flex; align-items: center; justify-content: center; z-index: 100; }
+#login-card { background: #fff; border-radius: 12px; padding: 32px 40px; text-align: center; box-shadow: 0 8px 32px rgba(0,0,0,.2); max-width: 360px; }
+#login-card h2 { font-size: 20px; margin-bottom: 8px; color: #1a1a2e; }
+#login-card p { font-size: 13px; color: #6c757d; margin-bottom: 24px; line-height: 1.5; }
+#login-card .login-btn { display: block; width: 100%; padding: 10px; background: #0078d4; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
+#login-card .login-btn:hover { background: #006bc0; }
+#login-card .skip-btn { background: none; border: none; color: #6c757d; font-size: 12px; cursor: pointer; text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<!-- Login overlay (shown on first load if not authenticated) -->
+<div id="login-overlay" style="display:none">
+  <div id="login-card">
+    <h2>&#128203; Gjenkraft WBS Plan</h2>
+    <p>Zaloguj się kontem Gjenkraft, żeby zobaczyć aktualne dane i edytować statusy.</p>
+    <button class="login-btn" onclick="login()">&#128274; Zaloguj przez Microsoft</button>
+    <button class="skip-btn" onclick="skipLogin()">Przeglądaj bez logowania (tryb offline)</button>
+  </div>
+</div>
+
+<header>
+  <div>
+    <h1>&#128203; Gjenkraft WBS Plan — 2.8kt Composite Recycling Plant</h1>
+  </div>
+  <div id="auth-bar">
+    <span id="status-dot"></span>
+    <span id="status-text">Ładowanie...</span>
+    <span id="user-name" style="display:none"></span>
+    <button id="refresh-btn" class="header-btn" onclick="fetchExcelData()" title="Pobierz najnowsze dane z SharePoint">&#8635; Odśwież</button>
+    <button id="login-btn-header" class="header-btn primary" onclick="login()" style="display:none">Zaloguj</button>
+    <button id="logout-btn" class="header-btn" onclick="logout()" style="display:none">Wyloguj</button>
+  </div>
+</header>
+
+<div id="cache-bar">&#9888;&#65039; Tryb offline — dane z cache. Ostatnia aktualizacja: <span id="cache-time"></span></div>
+
+<div id="filter-bar">
+  <div class="filter-group">
+    <label>Line</label>
+    <select id="f-line">
+      <option value="">All Lines</option>
+      <option>1. Cutting Line</option>
+      <option>2. Downsizing Line</option>
+      <option>3. Batch Line</option>
+      <option>4. Continues Line</option>
+      <option>5. Purification Line</option>
+      <option>6. Fiber Cutting Line</option>
+      <option>7. Ventilation</option>
+      <option>8. Electro / Power Supply</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Phase / Faza</label>
+    <select id="f-phase">
+      <option value="">All Phases</option>
+      <option value="Installation">Installation</option>
+      <option value="Commissioning">Commissioning</option>
+      <option value="Handover">Handover</option>
+      <option value="Documentation">Documentation</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Responsible</label>
+    <select id="f-resp"><option value="">All</option></select>
+  </div>
+  <div class="filter-group">
+    <label>Status</label>
+    <select id="f-status"><option value="">All Statuses</option></select>
+  </div>
+  <button id="reset-btn" onclick="resetFilters()">&#8635; Reset</button>
+  <div id="results-count"></div>
+</div>
+
+<div id="loading"><span class="spinner"></span>v2 — inicjalizacja...</div>
+<div id="table-wrap" style="display:none">
+  <div id="no-results">Brak zadań spełniających wybrane filtry.</div>
+  <table id="wbs-table" style="display:none">
+    <thead>
+      <tr>
+        <th title="Level (col B)">Lvl</th>
+        <th title="WBS Code (col C)">WBS Code</th>
+        <th title="Task / Scope (col D)">Task / Scope</th>
+        <th title="Planned Date (col F)">Planned Date</th>
+        <th title="Responsible (col G)">Responsible</th>
+        <th title="Status (col I)">Status</th>
+        <th title="Comments (col J)">Comments</th>
+      </tr>
+    </thead>
+    <tbody id="wbs-body"></tbody>
+  </table>
+</div>
+<div id="toast-container"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIGURATION — wpisz swoje Client ID i Tenant ID z Azure Portal
+// ═══════════════════════════════════════════════════════════════
+const CONFIG = {
+  clientId: "65c461e2-cb59-4703-8170-3814618806a0",
+  tenantId: "fd7887f1-3dd1-413b-9fac-f1f3c34d7ce7",
+  driveId:  "b!4ukeEgKJUkGwP62RcVIxqzy4aRXDNrtHjY25F82-ggeI5xA4gqNyQqlzNrGriS2d",
+  itemId:   "01FCOII4QBN3OW33NPBNDKZZJ7S5YHZEL3",
+  sheets: [
+    "1. Cutting line",
+    "2. Downsizing line",
+    "3. Batch line",
+    "4. Continues line",
+    "5. Purification line",
+    "6. Fiber cutting line",
+    "7. Ventilation",
+    "8. Electro (Power supply)"
+  ],
+  scopes: ["Files.ReadWrite", "User.Read"],
+  redirectUri: "https://marcinrusincode.github.io/wbs-plan/wbs_plan.html"
+};
+
+const STATUS_OPTIONS = [
+  "", "Not started", "In progress", "Done",
+  "Mechanical Completion", "Ready for commissioning",
+  "Ready for handover", "Ready for operation", "On hold"
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATIC FALLBACK DATA (używane gdy brak logowania i brak cache)
+// ═══════════════════════════════════════════════════════════════
+const WBS_DATA = [
+  {sheet:"1. Cutting Line",level:1,wbs:"1",task:"Cutting line",phase:"",responsible:"Svein Tore",deadline:"N/A",status:"Procurement package approval"},
+  {sheet:"1. Cutting Line",level:2,wbs:"1.2",task:"Installation",phase:"Installation",responsible:"",deadline:"20-03-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.2.1",task:"Procurement",phase:"Installation",responsible:"Kjartan",deadline:"20-03-2026",status:"In progress"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"Kjartan",deadline:"20-03-2026",status:"Mechanical Completion"},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.2.1",task:"Anti-spill curtain on water jet tank",phase:"Installation",responsible:"Espen",deadline:"20-03-2026",status:"Done"},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.2.2",task:"Concrete repair - cable tranch",phase:"Installation",responsible:"",deadline:"27-03-2026",status:"Mechanical Completion"},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.2.3",task:"Drain in the floor",phase:"Installation",responsible:"",deadline:"27-03-2026",status:"Done"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"27-03-2026",status:"Done"},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.3.1",task:"E-stop connection",phase:"Installation",responsible:"",deadline:"06-02-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.3.2",task:"Waterjet nozle cabling/connections",phase:"Installation",responsible:"Tyo",deadline:"06-02-2026",status:"Ready for handover"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for operation"},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.4.1",task:"Reprogram the robot — ABB Robot",phase:"Installation",responsible:"",deadline:"27-03-2026",status:"Ready for operation"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"27-03-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"30-04-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Mechanical Completion"},
+  {sheet:"1. Cutting Line",level:2,wbs:"1.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"10-04-2026",status:"Mechanical Completion"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"10-04-2026",status:"Mechanical Completion"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.3.2",task:"Hot Commissioning — No Material Cutting line Plan 3 1.3.3 Hot Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"30-04-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:2,wbs:"1.4",task:"Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"03-05-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:2,wbs:"1.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for handover"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"26-03-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"26-03-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"26-03-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"26-03-2026",status:"Ready for handover"},
+  {sheet:"2. Downsizing Line",level:1,wbs:"2",task:"Downsizing line",phase:"",responsible:"Svein Tore",deadline:"20-03-2026",status:"Ready for handover"},
+  {sheet:"2. Downsizing Line",level:2,wbs:"2.2",task:"Installation",phase:"Installation",responsible:"Kjartan",deadline:"20-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.2.1",task:"Procurement",phase:"Installation",responsible:"",deadline:"20-03-2026",status:"Not started"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"Kjartan",deadline:"20-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.1",task:"Bolt Alligator Shear to floor",phase:"Installation",responsible:"Kjartan",deadline:"20-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.2",task:"Install spill plates on fences (plexi or similar)",phase:"Installation",responsible:"",deadline:"20-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.3",task:"Mechanical stopper for material",phase:"Installation",responsible:"",deadline:"20-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.4",task:"Operator panel/stand",phase:"Installation",responsible:"",deadline:"27-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.5",task:"Fencing of hazardous areas",phase:"Installation",responsible:"Kjartan",deadline:"27-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.6",task:"Weld guide for material",phase:"Installation",responsible:"Kjartan",deadline:"27-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.7",task:"Seal openings arround tray and belt",phase:"Installation",responsible:"Svein Tore",deadline:"27-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.2.3",task:"Electrical Installation",phase:"Installation",responsible:"Svein Tore",deadline:"27-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.1",task:"New breaker — Alligator Shear",phase:"Installation",responsible:"",deadline:"27-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.2",task:"Install connection box — Alligator Shear",phase:"Installation",responsible:"Kjartan",deadline:"27-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.3",task:"Cable ladders",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.4",task:"Replace cables to control buttons",phase:"Installation",responsible:"",deadline:"03-04-2026",status:"Mechanical Completion"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.5",task:"Connect belt motor",phase:"Installation",responsible:"",deadline:"03-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.6",task:"Emergency system verification",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for handover"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Ready for operation"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.4.1",task:"Fix/Testing clamping — Alligator Shear",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.2.5",task:"Mechanical Completion Downsizing line Plan 4 2.2.5.1 Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Mechanical Completion"},
+  {sheet:"2. Downsizing Line",level:2,wbs:"2.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.3.2",task:"Hot Commissioning — No Material",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.3.3",task:"Hot Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"2. Downsizing Line",level:2,wbs:"2.4",task:"Handover",phase:"Handover",responsible:"",deadline:"03-05-2026",status:"Mechanical Completion"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"09-04-2026",status:"Mechanical Completion"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:2,wbs:"2.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"02-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"02-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"02-04-2026",status:"Ready for handover"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.3",task:"Electrical & Control Documentation 4 2.1.3.1",phase:"Documentation",responsible:"",deadline:"02-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for handover"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"02-04-2026",status:"Ready for handover"},
+  {sheet:"3. Batch Line",level:1,wbs:"3",task:"Batch line",phase:"",responsible:"Marcin Rusin",deadline:"20-03-2026",status:"Not started"},
+  {sheet:"3. Batch Line",level:2,wbs:"3.2",task:"Installation",phase:"Installation",responsible:"Marcin Rusin",deadline:"20-03-2026",status:"Not started"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.2.1",task:"Procurement",phase:"Installation",responsible:"",deadline:"N/A",status:"Not started"},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.1.1",task:"Small burning chamber for batch",phase:"Installation",responsible:"",deadline:"27-03-2026",status:"Not started"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"",deadline:"27-03-2026",status:"Mechanical Completion"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.2.3",task:"Electrical Installation",phase:"Installation",responsible:"Marcin",deadline:"27-03-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.3.1",task:"Complience check",phase:"Installation",responsible:"",deadline:"N/A",status:"Ready for handover"},
+  {sheet:"3. Batch Line",level:5,wbs:"3.2.3.1.1",task:"Two separate emergency stops — Batch Reactor",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for operation"},
+  {sheet:"3. Batch Line",level:5,wbs:"3.2.3.1.2",task:"Checklist completion (Edgar)",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:5,wbs:"3.2.3.1.3",task:"Connection to gas burner",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:5,wbs:"3.2.3.1.4",task:"Make new name plate",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.3.2",task:"Termtech presence on site during commissioning",phase:"Installation",responsible:"",deadline:"30-04-2026",status:"Mechanical Completion"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"30-04-2026",status:"Mechanical Completion"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"30-04-2026",status:"Mechanical Completion"},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"30-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"30-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"3. Batch Line",level:2,wbs:"3.3",task:"Commissioning Batch line Plan 3 3.3.1 Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.3.2",task:"Hot Commissioning — No Material",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.3.3",task:"Hot Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:2,wbs:"3.4",task:"Handover",phase:"Handover",responsible:"",deadline:"03-05-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"29-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"29-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"29-04-2026",status:"Ready for handover"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"29-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:2,wbs:"3.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"29-04-2026",status:"Ready for handover"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"29-04-2026",status:"Ready for handover"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"29-04-2026",status:"Ready for handover"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.7",task:"Testing & Commissioning Documentation 4 3.1.7.1",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"4. Continues Line",level:1,wbs:"4",task:"Continues line",phase:"",responsible:"Marcin Rusin",deadline:"20-03-2026",status:"Mechanical Completion"},
+  {sheet:"4. Continues Line",level:2,wbs:"4.2",task:"Installation",phase:"Installation",responsible:"Marcin Rusin",deadline:"20-03-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.2.1",task:"Procurement",phase:"Installation",responsible:"Kevin",deadline:"20-03-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.1.1",task:"Secure Supplier on site for Commissionig",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.1.2",task:"Air compressor — share with Evensen and Fiber Cutter",phase:"Installation",responsible:"Nils",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"Nils",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.1",task:"Oil & lubrication",phase:"Installation",responsible:"Nils",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.1.1",task:"Supplement gear oil — draft fan, reactor, auto feeder motors",phase:"Installation",responsible:"Nils",deadline:"17-04-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.1.2",task:"Lubricate rollers — reactor",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.1.3",task:"Lubricate gear ring — reactor",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.1.4",task:"Flush the engines — remove dust",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.2",task:"Covers and protection",phase:"Installation",responsible:"Nils",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.2.1",task:"Install reactor heating coils covers",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.2.2",task:"Install product separator front cover",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.2.3",task:"Erect cover plates from plexiglas — raw material silo",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Done"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.2.4",task:"Prefabricate and install rubber sleeve around Z conveyor outlet",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.2.5",task:"Fabricate and install dust cover — Z conveyor to raw mat silo inlet",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.2.6",task:"Autofeeder motor belt drive guard",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.3",task:"Tightness testing",phase:"Installation",responsible:"Piotr",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.3.1",task:"Gas system",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.3.2",task:"Fix leaks — pipe welds",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.3.3",task:"Tightness test — reactor",phase:"Installation",responsible:"Marcin",deadline:"17-04-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.2.3.4",task:"Leak test — big diameter piping",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.4",task:"NDT testing — gas line Continues line Plan 4 4.2.2.5 Install water pipes insulation — cold water only",phase:"Installation",responsible:"Marcin",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.6",task:"Gasket/sealings — obtain list from Kevin",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.7",task:"Epoxy paint in oil trays",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.2.3",task:"Electrical Installation",phase:"Installation",responsible:"Jan Henning",deadline:"17-04-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.3.1",task:"Install additional gas detection sensors (6 pcs)",phase:"Installation",responsible:"Marcin",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.3.2",task:"Power up heating coils on gas separator",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Mechanical Completion"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.3.3",task:"Gas burner air supply",phase:"Installation",responsible:"Marcin",deadline:"17-04-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.3.3.1",task:"Replace fans",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Ready for handover"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.3.3.2",task:"Secure grey wire in connection box next to fan",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Ready for operation"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.3.4",task:"N2 generator",phase:"Installation",responsible:"Kjartan",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.3.4.1",task:"Reconnect N2 and air compressor",phase:"Installation",responsible:"Marcin",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:5,wbs:"4.2.3.4.2",task:"Grounding pins in cabinet — N2 generator",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Mechanical Completion"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.4.1",task:"Emergency stop connection",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Mechanical Completion"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"01-06-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"30-04-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"4. Continues Line",level:2,wbs:"4.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"01-06-2026",status:"Mechanical Completion"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.3.2",task:"Hot Commissioning — No Material",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.3.3",task:"Hot Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.3.4",task:"Performance & Stability Test",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.3.5",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:2,wbs:"4.4",task:"Handover 3 4.4.1 Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:"Ready for handover"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"03-05-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"29-04-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:2,wbs:"4.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"29-04-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"29-04-2026",status:"Ready for handover"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"29-04-2026",status:"Ready for handover"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"29-04-2026",status:"Ready for handover"},
+  {sheet:"5. Purification Line",level:1,wbs:"5",task:"Purification line",phase:"",responsible:"Svein Tore",deadline:"01-04-2026",status:"Not started"},
+  {sheet:"5. Purification Line",level:2,wbs:"5.2",task:"Installation",phase:"Installation",responsible:"Nils",deadline:"01-04-2026",status:"Done"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.2.1",task:"Procurement",phase:"Installation",responsible:"Marcin",deadline:"N/A",status:"Done"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"",deadline:"N/A",status:"Done"},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.2.1",task:"Prefabrication and installation of hoods — inlet and outlet",phase:"Installation",responsible:"Marcin",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.2.2",task:"Pneumatic system connection — Evensen Furnace",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.2.3",task:"Loading/outlonging roller conveyors",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Ready for handover"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for operation"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"01-05-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.4.1",task:"Service man visit — Evensen Furnace setup",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Mechanical Completion"},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"01-05-2026",status:"Mechanical Completion"},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"5. Purification Line",level:2,wbs:"5.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.3.2",task:"Hot Commissioning — No Material Purification line Plan 3 5.3.3 Hot Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"5. Purification Line",level:2,wbs:"5.4",task:"Handover",phase:"Handover",responsible:"",deadline:"03-05-2026",status:"Mechanical Completion"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"23-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"23-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"23-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"23-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:2,wbs:"5.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for handover"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for handover"},
+  {sheet:"6. Fiber Cutting Line",level:1,wbs:"6",task:"Fiber cutting line",phase:"",responsible:"",deadline:"01-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:2,wbs:"6.2",task:"Installation",phase:"Installation",responsible:"",deadline:"01-04-2026",status:"Done"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.2.1",task:"Procurement",phase:"Installation",responsible:"",deadline:"01-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"",deadline:"01-04-2026",status:"In progress"},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.2.1",task:"Remove existing CE marking (old — pre-modification)",phase:"Installation",responsible:"",deadline:"01-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.2.2",task:"Screw/lock side covers",phase:"Installation",responsible:"",deadline:"01-04-2026",status:"Done"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"01-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.3.1",task:"Yellow background ring on Emergency Stop button",phase:"Installation",responsible:"Edgar",deadline:"01-04-2026",status:"In progress"},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.3.2",task:"Lock electrical cabinet",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"In progress"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.4.1",task:"Compliance check",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for handover"},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Ready for operation"},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:2,wbs:"6.3",task:"Commissioning Fiber cutting line Plan 3 6.3.1 Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"10-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.3.2",task:"Dry Run — No Material",phase:"Commissioning",responsible:"",deadline:"10-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.3.3",task:"Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"17-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"17-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:2,wbs:"6.4",task:"Handover",phase:"Handover",responsible:"",deadline:"17-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"17-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"17-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"16-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"09-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:2,wbs:"6.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for handover"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"09-04-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:1,wbs:"7",task:"Ventilation",phase:"",responsible:"",deadline:"24-04-2026",status:"In progress"},
+  {sheet:"7. Ventilation",level:2,wbs:"7.2",task:"Installation",phase:"Installation",responsible:"Marcin Rusin",deadline:"27-03-2026",status:"Done"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.2.1",task:"Procurement",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Mechanical Completion"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"Marcin Rusin",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.1",task:"Foundation slab",phase:"Installation",responsible:"Marcin Rusin",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.1.1",task:"Cast concrete",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.1.2",task:"Prepare anchoring sketch — filter container",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.2",task:"Installation of filter and container",phase:"Installation",responsible:"Marcin Rusin",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.3",task:"Installation of ventilation ducts — outside",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"In progress"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.4",task:"Evensen",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.4.1",task:"temporary ventilation",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.4.2",task:"Prefabrication and installation of hood — Evensen furnace inlet",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.4.3",task:"Prefabrication and installation of hood — Evensen furnace outlet",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.4.4",task:"Ducts to Evensen gates with connection for the Evensen top",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.5",task:"Batch",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.5.1",task:"Prefabrication and installation of hood — batch reactor inlet",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.6",task:"Connection for alligator - optional",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.7",task:"Continues line",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.7.1",task:"Prefabrication and installation of hood — reactor inlet",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.7.2",task:"Prefabrication and installation of hood — reactor outlet",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.7.3",task:"Prefabrication and installation of hood — condensers tower",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.2.7.4",task:"Prefabrication and installation of hood — raw material silo Ventilation Plan 5 7.2.2.7.5 Prefabrication and installation of hood — cooling towers",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.8",task:"Installation of shut off valves",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.9",task:"Installation of extract fan",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Mechanical Completion"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.3.1",task:"Power connection between filter and cabinet",phase:"Installation",responsible:"Simen",deadline:"24-04-2026",status:"Ready for handover"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.3.1.1",task:"Erection of cable tray — supply and signal cables 600→400",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for operation"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.3.1.2",task:"Termination and connection of cables — filter to cabinet",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.3.1.3",task:"Installation of cable tray between filter house and hall",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.3.1.4",task:"Installation of supply and control cables — DB to filter appliances",phase:"Installation",responsible:"",deadline:"N/A",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:5,wbs:"7.2.3.1.5",task:"Connection of supply and control cables — DB to filter appliances",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Mechanical Completion"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Mechanical Completion"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"01-05-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Mechanical Completion"},
+  {sheet:"7. Ventilation",level:2,wbs:"7.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"24-04-2026",status:"Mechanical Completion"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"01-05-2026",status:"Mechanical Completion"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.3.2",task:"Hot Commissioning",phase:"Commissioning",responsible:"",deadline:"01-05-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.3.4",task:"Performance Test",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.3.6",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:2,wbs:"7.4",task:"Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:"Ready for handover"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.4.3",task:"Spare Parts & Tools Handover 3 7.4.4 Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"03-05-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:2,wbs:"7.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"23-04-2026",status:"Ready for handover"},
+  {sheet:"8. Electro / Power Supply",level:1,wbs:"8",task:"Electro (Power supply)",phase:"",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:2,wbs:"8.2",task:"Installation",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.2.1",task:"Procurement",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.2.1",task:"T8 transformer room - if needed",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:5,wbs:"8.2.2.1.1",task:"Design T8 transformer room",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:5,wbs:"8.2.2.1.2",task:"Build walls — T8 transformer enclosure",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:5,wbs:"8.2.2.1.3",task:"Build roof — T8 transformer enclosure",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:5,wbs:"8.2.2.1.4",task:"Install door — T8 transformer enclosure",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Mechanical Completion"},
+  {sheet:"8. Electro / Power Supply",level:5,wbs:"8.2.2.1.5",task:"Install ventilation system — T8 transformer enclosure",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for handover"},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.3.1",task:"Heating coils on gas separator - contines",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:5,wbs:"8.2.3.1.1",task:"New breaker — batch reactor connection box",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:5,wbs:"8.2.3.1.2",task:"New cable in trenches to multiframe — heating cabinet",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for handover"},
+  {sheet:"8. Electro / Power Supply",level:5,wbs:"8.2.3.1.3",task:"Connect supply line to heating cabinet",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for operation"},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.3.2",task:"N2 Generator & Remaining Connections",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.5.2",task:"Punch A clearance Electro (Power supply) Plan 4 8.2.5.3 Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:2,wbs:"8.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"",status:"Ready for handover"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.3.1",task:"Electrical Inspection & Test (NEK 400-6)",phase:"Commissioning",responsible:"",deadline:"",status:"Ready for handover"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.3.2",task:"Energisation & Power Distribution Check",phase:"Commissioning",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:2,wbs:"8.4",task:"Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:2,wbs:"8.1",task:"Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.1.1",task:"Design Documentation — Norconsult",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.1.2",task:"Switchboard Documentation — Gjenkraft as Modifier",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.1.3",task:"Electrical Installer Documentation 3 8.1.4 Transformer T8",phase:"Documentation",responsible:"",deadline:"",status:""}
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let msalInstance = null;
+let currentAccount = null;
+let isOnline = false;
+let displayData = []; // aktualnie wyświetlane dane
+let saveTimers = {};  // debounce timers per rowKey
+
+// ═══════════════════════════════════════════════════════════════
+// MSAL SETUP
+// ═══════════════════════════════════════════════════════════════
+function dbg(msg) {
+  document.getElementById('loading').innerHTML = '<span class="spinner"></span>' + msg;
+}
+
+async function initMsal() {
+  dbg('A: initMsal start');
+  if (!CONFIG.clientId || CONFIG.clientId === "REPLACE_WITH_AZURE_CLIENT_ID") {
+    showConfigWarning();
+    useStaticData();
+    return;
+  }
+  try {
+    dbg('B: tworzę PublicClientApplication...');
+    msalInstance = new msal.PublicClientApplication({
+      auth: {
+        clientId: CONFIG.clientId,
+        authority: `https://login.microsoftonline.com/${CONFIG.tenantId}`,
+        redirectUri: CONFIG.redirectUri
+      },
+      cache: { cacheLocation: "sessionStorage" }
+    });
+    dbg('C: initialize()...');
+    await msalInstance.initialize();
+    dbg('D: handleRedirectPromise()...');
+    const resp = await msalInstance.handleRedirectPromise();
+    if (resp && resp.account) currentAccount = resp.account;
+    dbg('E: tryAutoLogin()...');
+    await tryAutoLogin();
+  } catch(e) {
+    document.getElementById('loading').innerHTML = 'BŁĄD MSAL: ' + e.message;
+    console.warn("MSAL init error:", e);
+    document.getElementById('login-overlay').style.display = 'none';
+    useStaticData();
+  }
+}
+
+async function tryAutoLogin() {
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    currentAccount = accounts[0];
+    await fetchExcelData();
+  } else {
+    // Show login overlay only if no cached data
+    const cached = loadFromCache();
+    if (cached) {
+      useData(cached.data, false, cached.time);
+    } else {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('login-overlay').style.display = 'flex';
+      updateAuthUI(false);
+    }
+  }
+}
+
+async function login() {
+  if (!msalInstance) { showToast("MSAL nie jest zainicjalizowany", "error"); return; }
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  try {
+    // Use redirect flow — more reliable on SharePoint (no popup blockers)
+    await msalInstance.loginRedirect({ scopes: CONFIG.scopes });
+    // Page will redirect to Microsoft login and come back — handled by handleRedirectPromise
+  } catch(e) {
+    console.warn("Login error:", e);
+    showToast("Błąd logowania: " + e.message, "error");
+    const cached = loadFromCache();
+    if (cached) useData(cached.data, false, cached.time);
+    else useStaticData();
+  }
+}
+
+function logout() {
+  if (!msalInstance) return;
+  msalInstance.logoutRedirect({ account: currentAccount });
+}
+
+function skipLogin() {
+  document.getElementById('login-overlay').style.display = 'none';
+  const cached = loadFromCache();
+  if (cached) useData(cached.data, false, cached.time);
+  else useStaticData();
+}
+
+async function getToken() {
+  const req = { scopes: CONFIG.scopes, account: currentAccount };
+  try {
+    const resp = await msalInstance.acquireTokenSilent(req);
+    return resp.accessToken;
+  } catch(silentErr) {
+    console.warn("Silent token failed:", silentErr.message);
+    // Popup may be blocked on SharePoint — use redirect instead
+    await msalInstance.acquireTokenRedirect(req);
+    throw new Error("Przekierowanie do logowania..."); // never reached
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GRAPH API — READ
+// ═══════════════════════════════════════════════════════════════
+// Fetch with timeout helper
+function fetchWithTimeout(url, options, ms = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+}
+
+function parseSheetRows(sheetName, values) {
+  const displayName = normalizeSheetName(sheetName);
+
+  // Find header row containing "WBS Level" or "WBS Code"
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(values.length, 10); i++) {
+    const row = values[i].map(c => String(c||'').toLowerCase());
+    if (row.some(c => c.includes('wbs') && (c.includes('level') || c.includes('code')))) {
+      headerIdx = i; break;
+    }
+  }
+
+  const rows = [];
+  for (let i = headerIdx + 1; i < values.length; i++) {
+    const row = values[i];
+    const level = parseInt(row[1]) || 0;
+    const wbsCode = String(row[2] || '').trim();
+    const task    = String(row[3] || '').trim();
+    if (!level || !wbsCode || !task) continue;
+    if (task.toLowerCase().includes('wbs element') || wbsCode.toLowerCase().includes('wbs')) continue;
+    rows.push({
+      sheet:       displayName,
+      level:       level,
+      wbs:         wbsCode,
+      task:        task,
+      phase:       getPhase(wbsCode),
+      deadline:    formatDate(row[5]),
+      responsible: String(row[6] || '').trim(),
+      status:      String(row[8] || '').trim(),   // col I (0-indexed: 8)
+      comment:     String(row[9] || '').trim(),   // col J (0-indexed: 9)
+      _sheetName:  sheetName,
+      _rowIdx:     i + 1   // 1-based Excel row number
+    });
+  }
+  return rows;
+}
+
+// Load SheetJS on demand (not at page load) so MSAL can initialize quickly
+function loadSheetJs() {
+  if (window.XLSX) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    function tryLoad(src, fallbackSrc) {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = fallbackSrc
+        ? () => tryLoad(fallbackSrc, null)
+        : () => reject(new Error('Nie można załadować biblioteki SheetJS'));
+      document.head.appendChild(s);
+    }
+    // Tier 1: self-hosted on SharePoint, Tier 2: jsdelivr CDN
+    tryLoad('./xlsx.full.min.js', 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js');
+  });
+}
+
+async function fetchExcelData() {
+  const loadEl = document.getElementById('loading');
+  loadEl.innerHTML = '<span class="spinner"></span>Łączenie z SharePoint...';
+  loadEl.style.display = 'block';
+  document.getElementById('table-wrap').style.display = 'none';
+
+  // Overall 60-second timeout — fall back to cache on expiry
+  const fallbackTimer = setTimeout(() => {
+    console.warn("fetchExcelData: overall timeout");
+    showToast("Przekroczono czas ładowania — używam cache", "error");
+    const cached = loadFromCache();
+    if (cached) useData(cached.data, false, cached.time);
+    else useStaticData();
+  }, 60000);
+
+  try {
+    loadEl.innerHTML = '<span class="spinner"></span>Pobieranie tokenu...';
+    const token = await getToken();
+
+    loadEl.innerHTML = '<span class="spinner"></span>Ładowanie biblioteki parsera...';
+    await loadSheetJs();
+
+    // Download the raw XLSX binary — one request instead of 8 workbook API calls.
+    // The workbook API opens Excel Online on every call (30-60 sec); file download is ~3 sec.
+    loadEl.innerHTML = '<span class="spinner"></span>Pobieranie pliku Excel z SharePoint...';
+    const fileUrl = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/content`;
+    const resp = await fetchWithTimeout(fileUrl, { headers: { Authorization: `Bearer ${token}` } }, 45000);
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      throw new Error(`HTTP ${resp.status} — ${errText.slice(0,120) || 'sprawdź uprawnienia API'}`);
+    }
+
+    loadEl.innerHTML = '<span class="spinner"></span>Parsowanie danych...';
+    const arrayBuffer = await resp.arrayBuffer();
+    const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: false });
+
+    const rows = [];
+    for (const sheetName of CONFIG.sheets) {
+      const ws = workbook.Sheets[sheetName];
+      if (!ws) { console.warn(`Sheet "${sheetName}" not found in workbook`); continue; }
+      const values = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      rows.push(...parseSheetRows(sheetName, values));
+    }
+
+    clearTimeout(fallbackTimer);
+    if (rows.length === 0) throw new Error("Brak danych — sprawdź nazwy zakładek i uprawnienia API");
+
+    saveToCache(rows);
+    useData(rows, true);
+    showToast(`✓ Pobrano ${rows.length} zadań z SharePoint`, "success");
+  } catch(e) {
+    clearTimeout(fallbackTimer);
+    console.error("fetchExcelData error:", e);
+    showToast("Błąd: " + e.message, "error");
+    const cached = loadFromCache();
+    if (cached) useData(cached.data, false, cached.time);
+    else useStaticData();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GRAPH API — WRITE
+// ═══════════════════════════════════════════════════════════════
+async function saveCell(row, newStatus, newComment) {
+  const key = row._sheetName + '_' + row._rowIdx;
+  // Update display data immediately
+  const item = displayData.find(r => r._sheetName === row._sheetName && r._rowIdx === row._rowIdx);
+  if (item) { item.status = newStatus; item.comment = newComment; }
+
+  // Debounce: wait 800ms before actually saving
+  clearTimeout(saveTimers[key]);
+  saveTimers[key] = setTimeout(async () => {
+    const statusEl  = document.querySelector(`[data-key="${key}"] .status-select`);
+    const commentEl = document.querySelector(`[data-key="${key}"] .comment-input`);
+    if (statusEl)  statusEl.classList.add('saving');
+    if (commentEl) commentEl.classList.add('saving');
+    try {
+      const token = await getToken();
+      // Excel row address: row[8]=I, row[9]=J → address I{row}:J{row}
+      const addr = `I${row._rowIdx}:J${row._rowIdx}`;
+      const url = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/workbook/worksheets('${encodeURIComponent(row._sheetName)}')/range(address='${addr}')`;
+      const resp = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [[newStatus, newComment]] })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      showToast("&#10003; Zapisano", "success");
+      // Update cache
+      saveToCache(displayData);
+    } catch(e) {
+      showToast("Błąd zapisu: " + e.message, "error");
+    } finally {
+      if (statusEl)  statusEl.classList.remove('saving');
+      if (commentEl) commentEl.classList.remove('saving');
+    }
+  }, 800);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA HELPERS
+// ═══════════════════════════════════════════════════════════════
+function normalizeSheetName(name) {
+  const map = {
+    "1. Cutting line":           "1. Cutting Line",
+    "2. Downsizing line":        "2. Downsizing Line",
+    "3. Batch line":             "3. Batch Line",
+    "4. Continues line":         "4. Continues Line",
+    "5. Purification line":      "5. Purification Line",
+    "6. Fiber cutting line":     "6. Fiber Cutting Line",
+    "7. Ventilation":            "7. Ventilation",
+    "8. Electro (Power supply)": "8. Electro / Power Supply"
+  };
+  return map[name] || name;
+}
+
+function getPhase(wbs) {
+  const parts = String(wbs).split('.');
+  if (parts.length >= 2) {
+    if (parts[1] === '1') return 'Documentation';
+    if (parts[1] === '2') return 'Installation';
+    if (parts[1] === '3') return 'Commissioning';
+    if (parts[1] === '4') return 'Handover';
+  }
+  return '';
+}
+
+function formatDate(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  if (s === '' || s === '0') return '';
+  // Excel serial date → JS date
+  const num = parseFloat(s);
+  if (!isNaN(num) && num > 40000) {
+    const d = new Date(Math.round((num - 25569) * 86400000));
+    const dd = String(d.getUTCDate()).padStart(2,'0');
+    const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+    const yy = d.getUTCFullYear();
+    return `${dd}-${mm}-${yy}`;
+  }
+  return s;
+}
+
+function useStaticData() {
+  const data = WBS_DATA.map((r,i) => ({...r, comment:'', _sheetName: r.sheet, _rowIdx: i+2}));
+  useData(data, false);
+}
+
+function useData(data, online, cacheTime) {
+  displayData = data;
+  isOnline = online;
+  populateFilters(data);
+  render();
+  updateAuthUI(online, cacheTime);
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('table-wrap').style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CACHE (localStorage)
+// ═══════════════════════════════════════════════════════════════
+function saveToCache(data) {
+  try {
+    localStorage.setItem('wbs_cache', JSON.stringify({ time: new Date().toISOString(), data }));
+  } catch(e) { console.warn('Cache save failed:', e); }
+}
+
+function loadFromCache() {
+  try {
+    const raw = localStorage.getItem('wbs_cache');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════════
+function updateAuthUI(online, cacheTime) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  const userName = document.getElementById('user-name');
+  const loginBtn = document.getElementById('login-btn-header');
+  const logoutBtn = document.getElementById('logout-btn');
+  const refreshBtn = document.getElementById('refresh-btn');
+  const cacheBar = document.getElementById('cache-bar');
+
+  dot.className = online ? 'online' : 'offline';
+  if (online && currentAccount) {
+    txt.textContent = 'Online';
+    userName.textContent = currentAccount.name || currentAccount.username;
+    userName.style.display = 'inline';
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'inline';
+    refreshBtn.style.display = 'inline';
+    cacheBar.style.display = 'none';
+  } else {
+    txt.textContent = 'Offline';
+    userName.style.display = 'none';
+    loginBtn.style.display = 'inline';
+    logoutBtn.style.display = 'none';
+    refreshBtn.style.display = 'none';
+    if (cacheTime) {
+      const dt = new Date(cacheTime);
+      document.getElementById('cache-time').textContent =
+        dt.toLocaleDateString('pl-PL') + ' ' + dt.toLocaleTimeString('pl-PL', {hour:'2-digit',minute:'2-digit'});
+      cacheBar.style.display = 'block';
+    }
+  }
+}
+
+function showConfigWarning() {
+  showToast("Tryb statyczny — otwórz plik przez SharePoint żeby się zalogować", "info");
+}
+
+function showToast(msg, type='info') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+function badgeClass(s) {
+  const sl = (s||'').toLowerCase();
+  if (sl.includes('done'))             return 'badge-done';
+  if (sl.includes('in progress'))      return 'badge-progress';
+  if (sl.includes('not started'))      return 'badge-notstarted';
+  if (sl.includes('mechanical compl')) return 'badge-mc';
+  if (sl.includes('commissioning'))    return 'badge-commissioning';
+  if (sl.includes('handover'))         return 'badge-handover';
+  if (sl.includes('operation'))        return 'badge-operation';
+  if (sl.includes('procurement'))      return 'badge-procurement';
+  if (sl.includes('on hold'))          return 'badge-onhold';
+  return 'badge-other';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════
+function populateFilters(data) {
+  const respSel   = document.getElementById('f-resp');
+  const statusSel = document.getElementById('f-status');
+  const prevResp   = respSel.value;
+  const prevStatus = statusSel.value;
+
+  // Rebuild but keep selection
+  while (respSel.options.length > 1)   respSel.remove(1);
+  while (statusSel.options.length > 1) statusSel.remove(1);
+
+  [...new Set(data.map(r=>r.responsible).filter(Boolean))].sort().forEach(v => {
+    const o = new Option(v,v); respSel.appendChild(o);
+  });
+  [...new Set(data.map(r=>r.status).filter(Boolean))].sort().forEach(v => {
+    const o = new Option(v,v); statusSel.appendChild(o);
+  });
+
+  respSel.value   = prevResp;
+  statusSel.value = prevStatus;
+}
+
+function resetFilters() {
+  ['f-line','f-phase','f-resp','f-status'].forEach(id => document.getElementById(id).value = '');
+  render();
+}
+
+['f-line','f-phase','f-resp','f-status'].forEach(id =>
+  document.getElementById(id)?.addEventListener('change', render)
+);
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+function render() {
+  const fLine   = document.getElementById('f-line').value;
+  const fPhase  = document.getElementById('f-phase').value;
+  const fResp   = document.getElementById('f-resp').value;
+  const fStatus = document.getElementById('f-status').value;
+  const hasFilter = fLine || fPhase || fResp || fStatus;
+
+  // Step 1: direct matches
+  const matchedIdx = new Set();
+  displayData.forEach((r, i) => {
+    if (fLine   && r.sheet       !== fLine)   return;
+    if (fPhase  && r.phase       !== fPhase)  return;
+    if (fResp   && r.responsible !== fResp)   return;
+    if (fStatus && r.status      !== fStatus) return;
+    matchedIdx.add(i);
+  });
+
+  // Step 2: include ancestors
+  const ancestorIdx = new Set();
+  if (hasFilter) {
+    matchedIdx.forEach(i => {
+      const r = displayData[i];
+      for (let j = i - 1; j >= 0; j--) {
+        const p = displayData[j];
+        if (p.sheet !== r.sheet) break;
+        if (p.level < r.level && r.wbs.startsWith(p.wbs + '.')) {
+          if (!matchedIdx.has(j)) ancestorIdx.add(j);
+        }
+      }
+    });
+  }
+
+  const visible = displayData
+    .map((r, i) => ({...r, idx: i, isAncestor: ancestorIdx.has(i)}))
+    .filter(r => !hasFilter || matchedIdx.has(r.idx) || ancestorIdx.has(r.idx));
+
+  const tbody = document.getElementById('wbs-body');
+  tbody.innerHTML = '';
+  let currentSheet = null;
+
+  visible.forEach(r => {
+    if (r.sheet !== currentSheet) {
+      currentSheet = r.sheet;
+      const hdr = document.createElement('tr');
+      hdr.className = 'sheet-header';
+      hdr.innerHTML = `<td colspan="7">&#128295; ${r.sheet}</td>`;
+      tbody.appendChild(hdr);
+    }
+    const tr = document.createElement('tr');
+    if (r.isAncestor) tr.className = 'parent-context';
+    const key = (r._sheetName||r.sheet) + '_' + r._rowIdx;
+    tr.setAttribute('data-key', key);
+
+    const indent = `indent-${Math.min(r.level, 5)}`;
+    const dateHtml = r.deadline && r.deadline !== 'N/A' ? r.deadline : (r.deadline === 'N/A' ? '—' : '');
+    const respHtml = r.responsible ? `<span class="chip">${r.responsible}</span>` : '';
+
+    let statusHtml, commentHtml;
+    if (isOnline) {
+      // Editable
+      const opts = STATUS_OPTIONS.map(o =>
+        `<option value="${o}" ${r.status===o?'selected':''}>${o||'— wybierz —'}</option>`
+      ).join('');
+      statusHtml = `<select class="status-select" onchange="onStatusChange(this,'${key}')">
+        ${opts}</select>`;
+      const safeComment = (r.comment||'').replace(/"/g,'&quot;');
+      commentHtml = `<input class="comment-input" type="text" value="${safeComment}"
+        placeholder="Dodaj komentarz..." oninput="onCommentChange(this,'${key}')">`;
+    } else {
+      statusHtml = r.status ? `<span class="badge ${badgeClass(r.status)}">${r.status}</span>` : '';
+      commentHtml = `<span style="color:#555;font-size:11px">${r.comment||''}</span>`;
+    }
+
+    tr.innerHTML = `
+      <td class="level-col">${r.level}</td>
+      <td class="wbs-col">${r.wbs}</td>
+      <td class="task-col"><span class="${indent}">${r.task}</span></td>
+      <td class="date-col">${dateHtml}</td>
+      <td class="resp-col">${respHtml}</td>
+      <td class="status-col">${statusHtml}</td>
+      <td class="comments-col">${commentHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const total = hasFilter ? matchedIdx.size : displayData.length;
+  document.getElementById('results-count').textContent =
+    hasFilter
+      ? `${visible.length} wierszy (${matchedIdx.size} pasujące + ${ancestorIdx.size} rodzice)`
+      : `${displayData.length} zadań`;
+
+  document.getElementById('no-results').style.display  = visible.length === 0 ? 'block' : 'none';
+  document.getElementById('wbs-table').style.display   = visible.length === 0 ? 'none' : '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDIT HANDLERS
+// ═══════════════════════════════════════════════════════════════
+function onStatusChange(sel, key) {
+  const row = getRowByKey(key);
+  if (!row) return;
+  const commentEl = document.querySelector(`[data-key="${key}"] .comment-input`);
+  const comment = commentEl ? commentEl.value : (row.comment || '');
+  row.status = sel.value;
+  saveCell(row, sel.value, comment);
+}
+
+function onCommentChange(input, key) {
+  const row = getRowByKey(key);
+  if (!row) return;
+  const statusEl = document.querySelector(`[data-key="${key}"] .status-select`);
+  const status = statusEl ? statusEl.value : (row.status || '');
+  row.comment = input.value;
+  saveCell(row, status, input.value);
+}
+
+function getRowByKey(key) {
+  return displayData.find(r => {
+    const k = (r._sheetName||r.sheet) + '_' + r._rowIdx;
+    return k === key;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════
+// BOOT — load MSAL then init; fallback to static data if unavailable
+// ═══════════════════════════════════════════════════════════════
+(function bootApp() {
+  // file:// — no OAuth possible, show static/cached data immediately
+  if (window.location.protocol === 'file:') {
+    var c = loadFromCache();
+    if (c) useData(c.data, false, c.time);
+    else useStaticData();
+    showToast('Tryb offline — otwórz przez SharePoint żeby się zalogować', 'info');
+    return;
+  }
+
+  function onMsalLoaded() { initMsal(); }
+
+  function loadScript(src, onload, onerror) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = onload;
+    s.onerror = onerror;
+    document.head.appendChild(s);
+  }
+
+  function onAllCdnsFailed() {
+    var c = loadFromCache();
+    if (c) useData(c.data, false, c.time);
+    else useStaticData();
+    showToast('Brak dostępu do serwera autoryzacji — tryb offline', 'info');
+  }
+
+  // Tier 1: self-hosted on SharePoint (same-origin, bypasses corporate firewall)
+  // Tier 2: jsdelivr CDN
+  // Tier 3: offline fallback
+  dbg('Ładowanie MSAL (self-hosted)...');
+  loadScript('./msal-browser.min.js', onMsalLoaded, function() {
+    dbg('Ładowanie MSAL (jsdelivr CDN)...');
+    loadScript('https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js', onMsalLoaded, onAllCdnsFailed);
+  });
+})();
+</script>
+</body>
+</html>
