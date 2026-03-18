@@ -120,9 +120,9 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
 <div id="login-overlay" style="display:none">
   <div id="login-card">
     <h2>&#128203; Gjenkraft WBS Plan</h2>
-    <p>Zaloguj się kontem Gjenkraft, żeby zobaczyć aktualne dane i edytować statusy.</p>
-    <button class="login-btn" onclick="login()">&#128274; Zaloguj przez Microsoft</button>
-    <button class="skip-btn" onclick="skipLogin()">Przeglądaj bez logowania (tryb offline)</button>
+    <p>Sign in with your Gjenkraft account to see live data and edit statuses.</p>
+    <button class="login-btn" onclick="login()">&#128274; Sign in with Microsoft</button>
+    <button class="skip-btn" onclick="skipLogin()">Continue without login (offline mode)</button>
   </div>
 </div>
 
@@ -132,15 +132,15 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
   </div>
   <div id="auth-bar">
     <span id="status-dot"></span>
-    <span id="status-text">Ładowanie...</span>
+    <span id="status-text">Loading...</span>
     <span id="user-name" style="display:none"></span>
-    <button id="refresh-btn" class="header-btn" onclick="fetchExcelData()" title="Pobierz najnowsze dane z SharePoint">&#8635; Odśwież</button>
-    <button id="login-btn-header" class="header-btn primary" onclick="login()" style="display:none">Zaloguj</button>
-    <button id="logout-btn" class="header-btn" onclick="logout()" style="display:none">Wyloguj</button>
+    <button id="refresh-btn" class="header-btn" onclick="fetchExcelData()" title="Fetch latest data from SharePoint">&#8635; Refresh</button>
+    <button id="login-btn-header" class="header-btn primary" onclick="login()" style="display:none">Sign in</button>
+    <button id="logout-btn" class="header-btn" onclick="logout()" style="display:none">Sign out</button>
   </div>
 </header>
 
-<div id="cache-bar">&#9888;&#65039; Tryb offline — dane z cache. Ostatnia aktualizacja: <span id="cache-time"></span></div>
+<div id="cache-bar">&#9888;&#65039; Offline mode — cached data. Last updated: <span id="cache-time"></span></div>
 
 <div id="filter-bar">
   <div class="filter-group">
@@ -179,9 +179,9 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
   <div id="results-count"></div>
 </div>
 
-<div id="loading"><span class="spinner"></span>v2 — inicjalizacja...</div>
+<div id="loading"><span class="spinner"></span>Loading data...</div>
 <div id="table-wrap" style="display:none">
-  <div id="no-results">Brak zadań spełniających wybrane filtry.</div>
+  <div id="no-results">No tasks match the selected filters.</div>
   <table id="wbs-table" style="display:none">
     <thead>
       <tr>
@@ -228,7 +228,7 @@ const STATUS_OPTIONS = [
 ];
 
 // ═══════════════════════════════════════════════════════════════
-// STATIC FALLBACK DATA (używane gdy brak logowania i brak cache)
+// STATIC FALLBACK DATA (used when not logged in and no cache)
 // ═══════════════════════════════════════════════════════════════
 const WBS_DATA = [
   {sheet:"1. Cutting Line",level:1,wbs:"1",task:"Cutting line",phase:"",responsible:"",deadline:"",status:""},
@@ -521,7 +521,7 @@ const WBS_DATA = [
 let msalInstance = null;
 let currentAccount = null;
 let isOnline = false;
-let displayData = []; // aktualnie wyświetlane dane
+let displayData = []; // currently displayed data
 let saveTimers = {};  // debounce timers per rowKey
 
 // ═══════════════════════════════════════════════════════════════
@@ -539,7 +539,7 @@ async function initMsal() {
     return;
   }
   try {
-    dbg('B: tworzę PublicClientApplication...');
+    dbg('B: creating PublicClientApplication...');
     msalInstance = new msal.PublicClientApplication({
       auth: {
         clientId: CONFIG.clientId,
@@ -556,7 +556,7 @@ async function initMsal() {
     dbg('E: tryAutoLogin()...');
     await tryAutoLogin();
   } catch(e) {
-    document.getElementById('loading').innerHTML = 'BŁĄD MSAL: ' + e.message;
+    document.getElementById('loading').innerHTML = 'MSAL ERROR: ' + e.message;
     console.warn("MSAL init error:", e);
     document.getElementById('login-overlay').style.display = 'none';
     useStaticData();
@@ -569,15 +569,10 @@ async function tryAutoLogin() {
     currentAccount = accounts[0];
     await fetchExcelData();
   } else {
-    // Show login overlay only if no cached data
+    // No account — show cached or static data immediately, login button stays in header
     const cached = loadFromCache();
-    if (cached) {
-      useData(cached.data, false, cached.time);
-    } else {
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('login-overlay').style.display = 'flex';
-      updateAuthUI(false);
-    }
+    if (cached) useData(cached.data, false, cached.time);
+    else useStaticData();
   }
 }
 
@@ -591,7 +586,7 @@ async function login() {
     // Page will redirect to Microsoft login and come back — handled by handleRedirectPromise
   } catch(e) {
     console.warn("Login error:", e);
-    showToast("Błąd logowania: " + e.message, "error");
+    showToast("Login error: " + e.message, "error");
     const cached = loadFromCache();
     if (cached) useData(cached.data, false, cached.time);
     else useStaticData();
@@ -681,7 +676,7 @@ function loadSheetJs() {
       s.onload = resolve;
       s.onerror = fallbackSrc
         ? () => tryLoad(fallbackSrc, null)
-        : () => reject(new Error('Nie można załadować biblioteki SheetJS'));
+        : () => reject(new Error('Failed to load SheetJS library'));
       document.head.appendChild(s);
     }
     // Tier 1: self-hosted on SharePoint, Tier 2: jsdelivr CDN
@@ -691,14 +686,14 @@ function loadSheetJs() {
 
 async function fetchExcelData() {
   const loadEl = document.getElementById('loading');
-  loadEl.innerHTML = '<span class="spinner"></span>Łączenie z SharePoint...';
+  loadEl.innerHTML = '<span class="spinner"></span>Connecting to SharePoint...';
   loadEl.style.display = 'block';
   document.getElementById('table-wrap').style.display = 'none';
 
   // Overall 60-second timeout — fall back to cache on expiry
   const fallbackTimer = setTimeout(() => {
     console.warn("fetchExcelData: overall timeout");
-    showToast("Przekroczono czas ładowania — używam cache", "error");
+    showToast("Loading timed out — using cached data", "error");
     const cached = loadFromCache();
     if (cached) useData(cached.data, false, cached.time);
     else useStaticData();
@@ -708,7 +703,7 @@ async function fetchExcelData() {
     loadEl.innerHTML = '<span class="spinner"></span>Pobieranie tokenu...';
     const token = await getToken();
 
-    loadEl.innerHTML = '<span class="spinner"></span>Ładowanie biblioteki parsera...';
+    loadEl.innerHTML = '<span class="spinner"></span>Loading parser library...';
     await loadSheetJs();
 
     // Download the raw XLSX binary — one request instead of 8 workbook API calls.
@@ -718,7 +713,7 @@ async function fetchExcelData() {
     const resp = await fetchWithTimeout(fileUrl, { headers: { Authorization: `Bearer ${token}` } }, 45000);
     if (!resp.ok) {
       const errText = await resp.text().catch(() => '');
-      throw new Error(`HTTP ${resp.status} — ${errText.slice(0,120) || 'sprawdź uprawnienia API'}`);
+      throw new Error(`HTTP ${resp.status} — ${errText.slice(0,120) || 'check API permissions'}`);
     }
 
     loadEl.innerHTML = '<span class="spinner"></span>Parsowanie danych...';
@@ -734,7 +729,7 @@ async function fetchExcelData() {
     }
 
     clearTimeout(fallbackTimer);
-    if (rows.length === 0) throw new Error("Brak danych — sprawdź nazwy zakładek i uprawnienia API");
+    if (rows.length === 0) throw new Error("No data — check sheet names and API permissions");
 
     saveToCache(rows);
     useData(rows, true);
@@ -742,7 +737,7 @@ async function fetchExcelData() {
   } catch(e) {
     clearTimeout(fallbackTimer);
     console.error("fetchExcelData error:", e);
-    showToast("Błąd: " + e.message, "error");
+    showToast("Error: " + e.message, "error");
     const cached = loadFromCache();
     if (cached) useData(cached.data, false, cached.time);
     else useStaticData();
@@ -780,7 +775,7 @@ async function saveCell(row, newStatus, newComment) {
       // Update cache
       saveToCache(displayData);
     } catch(e) {
-      showToast("Błąd zapisu: " + e.message, "error");
+      showToast("Save error: " + e.message, "error");
     } finally {
       if (statusEl)  statusEl.classList.remove('saving');
       if (commentEl) commentEl.classList.remove('saving');
@@ -900,7 +895,7 @@ function updateAuthUI(online, cacheTime) {
 }
 
 function showConfigWarning() {
-  showToast("Tryb statyczny — otwórz plik przez SharePoint żeby się zalogować", "info");
+  showToast("Static mode — open via SharePoint URL to sign in", "info");
 }
 
 function showToast(msg, type='info') {
@@ -1029,7 +1024,7 @@ function render() {
         ${opts}</select>`;
       const safeComment = (r.comment||'').replace(/"/g,'&quot;');
       commentHtml = `<input class="comment-input" type="text" value="${safeComment}"
-        placeholder="Dodaj komentarz..." oninput="onCommentChange(this,'${key}')">`;
+        placeholder="Add comment..." oninput="onCommentChange(this,'${key}')">`;
     } else {
       statusHtml = r.status ? `<span class="badge ${badgeClass(r.status)}">${r.status}</span>` : '';
       commentHtml = `<span style="color:#555;font-size:11px">${r.comment||''}</span>`;
@@ -1049,8 +1044,8 @@ function render() {
   const total = hasFilter ? matchedIdx.size : displayData.length;
   document.getElementById('results-count').textContent =
     hasFilter
-      ? `${visible.length} wierszy (${matchedIdx.size} pasujące + ${ancestorIdx.size} rodzice)`
-      : `${displayData.length} zadań`;
+      ? `${visible.length} rows (${matchedIdx.size} matched + ${ancestorIdx.size} parents)`
+      : `${displayData.length} tasks`;
 
   document.getElementById('no-results').style.display  = visible.length === 0 ? 'block' : 'none';
   document.getElementById('wbs-table').style.display   = visible.length === 0 ? 'none' : '';
@@ -1095,7 +1090,7 @@ function getRowByKey(key) {
     var c = loadFromCache();
     if (c) useData(c.data, false, c.time);
     else useStaticData();
-    showToast('Tryb offline — otwórz przez SharePoint żeby się zalogować', 'info');
+    showToast('Offline mode — open via SharePoint URL to sign in', 'info');
     return;
   }
 
@@ -1113,15 +1108,15 @@ function getRowByKey(key) {
     var c = loadFromCache();
     if (c) useData(c.data, false, c.time);
     else useStaticData();
-    showToast('Brak dostępu do serwera autoryzacji — tryb offline', 'info');
+    showToast('Authorization server unavailable — offline mode', 'info');
   }
 
   // Tier 1: self-hosted on SharePoint (same-origin, bypasses corporate firewall)
   // Tier 2: jsdelivr CDN
   // Tier 3: offline fallback
-  dbg('Ładowanie MSAL (self-hosted)...');
+  dbg('Loading MSAL (self-hosted)...');
   loadScript('./msal-browser.min.js', onMsalLoaded, function() {
-    dbg('Ładowanie MSAL (jsdelivr CDN)...');
+    dbg('Loading MSAL (jsdelivr CDN)...');
     loadScript('https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js', onMsalLoaded, onAllCdnsFailed);
   });
 })();
