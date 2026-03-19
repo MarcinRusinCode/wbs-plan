@@ -84,6 +84,8 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
 .badge-other       { background: #e9ecef; color: #495057; }
 
 .status-select { border: 1px solid #ced4da; border-radius: 6px; padding: 3px 6px; font-size: 11px; background: #fff; cursor: pointer; color: #333; outline: none; width: 100%; }
+.status-auto { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-style: italic; opacity: .75; }
+.status-auto::before { content: '⟳'; font-style: normal; font-size: 9px; }
 .status-select:focus { border-color: #4a6fa5; }
 .status-select.saving { opacity: .5; }
 
@@ -313,9 +315,7 @@ const CONFIG = {
 };
 
 const STATUS_OPTIONS = [
-  "", "Not started", "In progress", "Done",
-  "Mechanical Completion", "Ready for commissioning",
-  "On hold", "Void"
+  "", "Not started", "In progress", "Done", "On hold", "Void"
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -1132,6 +1132,43 @@ function showToast(msg, type='info') {
   setTimeout(() => el.remove(), 3500);
 }
 
+// ── Computed parent status ──────────────────────────────────────
+// Returns the effective status for a row:
+//  - Leaf rows → their own status
+//  - Parent rows → derived from children recursively:
+//    • all empty          → ""
+//    • all same           → that status
+//    • one child          → child's status
+//    • mixed              → "In progress"
+function getEffectiveStatus(row, data) {
+  const children = data.filter(r =>
+    r.sheet === row.sheet &&
+    r.level === row.level + 1 &&
+    r.wbs && row.wbs && r.wbs.startsWith(row.wbs + '.')
+  );
+  if (children.length === 0) return row.status || '';
+
+  const childStatuses = children.map(c => getEffectiveStatus(c, data));
+  const nonEmpty = childStatuses.filter(s => s !== '');
+  if (nonEmpty.length === 0) return '';
+  const unique = [...new Set(nonEmpty)];
+  // One child, or all children same status (and none empty)
+  if (unique.length === 1 && nonEmpty.length === childStatuses.length) return unique[0];
+  // All children done/terminal but mixed types
+  const TERMINAL = ['Done','Void','On hold','Mechanical Completion','Ready for commissioning','Ready for handover','Ready for operation'];
+  if (nonEmpty.length === childStatuses.length && nonEmpty.every(s => TERMINAL.includes(s))) return 'Done';
+  return 'In progress';
+}
+
+function hasChildren(row, data) {
+  return data.some(r =>
+    r.sheet === row.sheet &&
+    r.level === row.level + 1 &&
+    r.wbs && row.wbs && r.wbs.startsWith(row.wbs + '.')
+  );
+}
+// ───────────────────────────────────────────────────────────────
+
 function badgeClass(s) {
   const sl = (s||'').toLowerCase();
   if (sl.includes('done'))             return 'badge-done';
@@ -1288,16 +1325,23 @@ function render() {
     }
 
     let statusHtml, commentHtml;
+    const isParentRow = hasChildren(r, displayData);
     if (isOnline) {
-      // Editable
-      // Build status options; if row has a legacy value not in STATUS_OPTIONS, show it as disabled
-      const isLegacy = r.status && !STATUS_OPTIONS.includes(r.status);
-      const opts = [
-        ...(isLegacy ? [`<option value="${r.status}" selected disabled>${r.status}</option>`] : []),
-        ...STATUS_OPTIONS.map(o => `<option value="${o}" ${(!isLegacy && r.status===o)?'selected':''}>${o}</option>`)
-      ].join('');
-      statusHtml = `<select class="status-select" onchange="onStatusChange(this,'${key}')">
-        ${opts}</select>`;
+      if (isParentRow) {
+        // Parent: show computed status as read-only badge (auto-derived from children)
+        const computed = getEffectiveStatus(r, displayData);
+        statusHtml = computed
+          ? `<span class="badge ${badgeClass(computed)} status-auto">${computed}</span>`
+          : `<span class="status-auto" style="color:#aaa">—</span>`;
+      } else {
+        // Leaf: editable select
+        const isLegacy = r.status && !STATUS_OPTIONS.includes(r.status);
+        const opts = [
+          ...(isLegacy ? [`<option value="${r.status}" selected disabled>${r.status}</option>`] : []),
+          ...STATUS_OPTIONS.map(o => `<option value="${o}" ${(!isLegacy && r.status===o)?'selected':''}>${o}</option>`)
+        ].join('');
+        statusHtml = `<select class="status-select" onchange="onStatusChange(this,'${key}')">${opts}</select>`;
+      }
       const safeComment = (r.comment||'').replace(/"/g,'&quot;');
       commentHtml = `<input class="comment-input" type="text" value="${safeComment}"
         placeholder="Add comment..." oninput="onCommentChange(this,'${key}')">`;
@@ -1330,6 +1374,24 @@ function render() {
 // ═══════════════════════════════════════════════════════════════
 // EDIT HANDLERS
 // ═══════════════════════════════════════════════════════════════
+// Update status badges of all ancestor rows of a changed leaf, without full re-render
+function refreshParentBadges(changedRow) {
+  // Walk up the WBS tree and update badge for each visible ancestor
+  const parts = (changedRow.wbs || '').split('.');
+  for (let depth = parts.length - 1; depth >= 1; depth--) {
+    const ancestorWbs = parts.slice(0, depth).join('.');
+    const ancestor = displayData.find(r => r.sheet === changedRow.sheet && r.wbs === ancestorWbs);
+    if (!ancestor) continue;
+    const aKey = (ancestor._sheetName || ancestor.sheet) + '_' + ancestor._rowIdx;
+    const cell = document.querySelector(`[data-key="${aKey}"] .status-col`);
+    if (!cell) continue;
+    const computed = getEffectiveStatus(ancestor, displayData);
+    cell.innerHTML = computed
+      ? `<span class="badge ${badgeClass(computed)} status-auto">${computed}</span>`
+      : `<span class="status-auto" style="color:#aaa">—</span>`;
+  }
+}
+
 function onStatusChange(sel, key) {
   const row = getRowByKey(key);
   if (!row) return;
@@ -1337,6 +1399,8 @@ function onStatusChange(sel, key) {
   const comment = commentEl ? commentEl.value : (row.comment || '');
   row.status = sel.value;
   saveCell(row, sel.value, comment);
+  // Re-render parent status badges (computed from children)
+  refreshParentBadges(row);
 }
 
 function onCommentChange(input, key) {
