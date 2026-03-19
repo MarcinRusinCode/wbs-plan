@@ -30,6 +30,14 @@ header h1 { font-size: 16px; font-weight: 600; letter-spacing: .3px; }
 .filter-group select:focus { border-color: #4a6fa5; }
 #reset-btn { padding: 4px 12px; background: #4a6fa5; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; align-self: flex-end; }
 #reset-btn:hover { background: #3a5f95; }
+.ms-wrap { position: relative; }
+.ms-toggle { border: 1px solid #ced4da; border-radius: 6px; padding: 4px 28px 4px 9px; font-size: 12px; background: #fff; cursor: pointer; min-width: 140px; color: #333; outline: none; text-align: left; width: 100%; position: relative; }
+.ms-toggle::after { content: '▾'; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); font-size: 10px; color: #6c757d; }
+.ms-toggle.active { border-color: #4a6fa5; }
+.ms-dropdown { position: absolute; top: calc(100% + 3px); left: 0; background: #fff; border: 1px solid #ced4da; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.12); z-index: 100; min-width: 160px; padding: 6px 0; display: none; }
+.ms-dropdown label { display: flex; align-items: center; gap: 7px; padding: 5px 12px; font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0; color: #333; cursor: pointer; white-space: nowrap; }
+.ms-dropdown label:hover { background: #f0f4f8; }
+.ms-dropdown input[type=checkbox] { width: 13px; height: 13px; cursor: pointer; accent-color: #4a6fa5; }
 #refresh-btn { padding: 4px 12px; background: #28a745; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; align-self: flex-end; display: none; }
 #refresh-btn:hover { background: #218838; }
 #results-count { align-self: flex-end; font-size: 11px; color: #6c757d; padding-bottom: 2px; }
@@ -82,6 +90,9 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
 .comment-input { border: 1px solid #ced4da; border-radius: 6px; padding: 3px 8px; font-size: 11px; width: 100%; outline: none; color: #333; }
 .comment-input:focus { border-color: #4a6fa5; }
 .comment-input.saving { opacity: .5; }
+.resp-input { border: 1px solid #ced4da; border-radius: 6px; padding: 3px 8px; font-size: 11px; width: 100%; outline: none; color: #333; }
+.resp-input:focus { border-color: #4a6fa5; }
+.resp-input.saving { opacity: .5; }
 
 /* Responsible chip */
 .chip { display: inline-block; background: #e9ecef; border-radius: 10px; padding: 1px 8px; font-size: 11px; color: #495057; }
@@ -112,6 +123,23 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
 #login-card .login-btn { display: block; width: 100%; padding: 10px; background: #0078d4; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-bottom: 10px; }
 #login-card .login-btn:hover { background: #006bc0; }
 #login-card .skip-btn { background: none; border: none; color: #6c757d; font-size: 12px; cursor: pointer; text-decoration: underline; }
+
+/* Add Task Modal */
+#add-task-modal { position: fixed; inset: 0; background: rgba(26,26,46,.8); display: flex; align-items: center; justify-content: center; z-index: 200; }
+#add-task-card { background: #fff; border-radius: 12px; padding: 28px 32px; box-shadow: 0 8px 32px rgba(0,0,0,.2); max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; }
+#add-task-card h2 { font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 18px; }
+.at-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.at-field { display: flex; flex-direction: column; gap: 4px; }
+.at-field label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6c757d; }
+.at-field input, .at-field select { border: 1px solid #ced4da; border-radius: 6px; padding: 6px 9px; font-size: 12px; color: #333; outline: none; background: #fff; }
+.at-field input:focus, .at-field select:focus { border-color: #4a6fa5; }
+.at-field select:disabled { background: #f4f4f4; color: #aaa; cursor: not-allowed; }
+.at-full { grid-column: 1 / -1; }
+.at-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.at-buttons button { padding: 7px 18px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid #ced4da; background: #fff; color: #333; }
+.at-buttons button.primary { background: #4a6fa5; color: #fff; border-color: #4a6fa5; }
+.at-buttons button.primary:hover { background: #3a5f95; }
+.at-required::after { content: " *"; color: #dc3545; }
 </style>
 </head>
 <body>
@@ -123,6 +151,55 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
     <p>Sign in with your Gjenkraft account to see live data and edit statuses.</p>
     <button class="login-btn" onclick="login()">&#128274; Sign in with Microsoft</button>
     <button class="skip-btn" onclick="skipLogin()">Continue without login (offline mode)</button>
+  </div>
+</div>
+
+<!-- Add Task Modal -->
+<div id="add-task-modal" style="display:none">
+  <div id="add-task-card">
+    <h2>&#10133; Add New Task</h2>
+    <div class="at-grid">
+      <div class="at-field">
+        <label class="at-required">Line</label>
+        <select id="at-line" onchange="atUpdatePhase()"><option value="">— select —</option></select>
+      </div>
+      <div class="at-field">
+        <label class="at-required">Phase</label>
+        <select id="at-phase" onchange="atUpdateParent3()" disabled><option value="">— select line first —</option></select>
+      </div>
+      <div class="at-field at-full">
+        <label class="at-required">Category (Level 3)</label>
+        <select id="at-parent3" onchange="atUpdateParent4()" disabled><option value="">— select phase first —</option></select>
+      </div>
+      <div class="at-field at-full">
+        <label>Parent task (Level 4) — optional, leave empty to add at level 4</label>
+        <select id="at-parent4" disabled><option value="">— none (new task will be level 4) —</option></select>
+      </div>
+      <div class="at-field at-full">
+        <label class="at-required">Task name</label>
+        <input id="at-task" type="text" placeholder="Task description">
+      </div>
+      <div class="at-field">
+        <label>Planned Date</label>
+        <input id="at-date" type="date">
+      </div>
+      <div class="at-field">
+        <label>Responsible</label>
+        <input id="at-responsible" type="text" placeholder="Name">
+      </div>
+      <div class="at-field">
+        <label>Status</label>
+        <select id="at-status"></select>
+      </div>
+      <div class="at-field">
+        <label>Comment</label>
+        <input id="at-comment" type="text" placeholder="Optional comment">
+      </div>
+    </div>
+    <div class="at-buttons">
+      <button onclick="closeAddModal()">Cancel</button>
+      <button class="primary" onclick="submitAddTask()">Add Task</button>
+    </div>
   </div>
 </div>
 
@@ -144,6 +221,28 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
 
 <div id="filter-bar">
   <div class="filter-group">
+    <label>Level</label>
+    <select id="f-level" style="min-width:100px">
+      <option value="">All Levels</option>
+      <option value="1">Level 1</option>
+      <option value="2">Level 2</option>
+      <option value="3">Level 3</option>
+      <option value="4">Level 4</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Phase</label>
+    <div class="ms-wrap" id="phase-ms-wrap">
+      <button class="ms-toggle" id="phase-ms-btn" onclick="togglePhaseDropdown(event)">All Phases</button>
+      <div class="ms-dropdown" id="phase-ms-dropdown">
+        <label><input type="checkbox" value="Installation" onchange="onPhaseCheckChange()"> Installation</label>
+        <label><input type="checkbox" value="Commissioning" onchange="onPhaseCheckChange()"> Commissioning</label>
+        <label><input type="checkbox" value="Handover" onchange="onPhaseCheckChange()"> Handover</label>
+        <label><input type="checkbox" value="Documentation" onchange="onPhaseCheckChange()"> Documentation</label>
+      </div>
+    </div>
+  </div>
+  <div class="filter-group">
     <label>Line</label>
     <select id="f-line">
       <option value="">All Lines</option>
@@ -158,16 +257,6 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
     </select>
   </div>
   <div class="filter-group">
-    <label>Phase / Faza</label>
-    <select id="f-phase">
-      <option value="">All Phases</option>
-      <option value="Installation">Installation</option>
-      <option value="Commissioning">Commissioning</option>
-      <option value="Handover">Handover</option>
-      <option value="Documentation">Documentation</option>
-    </select>
-  </div>
-  <div class="filter-group">
     <label>Responsible</label>
     <select id="f-resp"><option value="">All</option></select>
   </div>
@@ -176,6 +265,7 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
     <select id="f-status"><option value="">All Statuses</option></select>
   </div>
   <button id="reset-btn" onclick="resetFilters()">&#8635; Reset</button>
+  <button id="add-task-btn" class="header-btn primary" onclick="openAddModal()" style="align-self:flex-end; padding:4px 12px; font-size:12px; border-radius:6px; border:none;">&#10133; Add Task</button>
   <div id="results-count"></div>
 </div>
 
@@ -513,8 +603,6 @@ const WBS_DATA = [
   {sheet:"8. Electro / Power Supply",level:3,wbs:"8.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
 ];
 
-];
-
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
@@ -603,6 +691,133 @@ function skipLogin() {
   const cached = loadFromCache();
   if (cached) useData(cached.data, false, cached.time);
   else useStaticData();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADD TASK MODAL
+// ═══════════════════════════════════════════════════════════════
+function openAddModal() {
+  if (!isOnline) { showToast('Sign in to add tasks', 'error'); return; }
+  const ls = document.getElementById('at-line');
+  ls.innerHTML = '<option value="">— select —</option>';
+  [...new Set(displayData.map(r => r.sheet))].forEach(s => {
+    ls.innerHTML += `<option value="${s}">${s}</option>`;
+  });
+  const ss = document.getElementById('at-status');
+  ss.innerHTML = STATUS_OPTIONS.map(o => `<option value="${o}">${o || '— select —'}</option>`).join('');
+  ['at-phase','at-parent3','at-parent4'].forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = '<option value="">—</option>';
+    el.disabled = true;
+  });
+  document.getElementById('at-task').value = '';
+  document.getElementById('at-date').value = '';
+  document.getElementById('at-responsible').value = '';
+  document.getElementById('at-comment').value = '';
+  document.getElementById('add-task-modal').style.display = 'flex';
+}
+
+function closeAddModal() {
+  document.getElementById('add-task-modal').style.display = 'none';
+}
+
+function atUpdatePhase() {
+  const line = document.getElementById('at-line').value;
+  const ps = document.getElementById('at-phase');
+  if (!line) { ps.innerHTML = '<option value="">— select line first —</option>'; ps.disabled = true; return; }
+  const phases = [...new Set(displayData.filter(r => r.sheet === line && r.phase).map(r => r.phase))];
+  ps.innerHTML = '<option value="">— select —</option>' + phases.map(p => `<option value="${p}">${p}</option>`).join('');
+  ps.disabled = false;
+  document.getElementById('at-parent3').innerHTML = '<option value="">—</option>'; document.getElementById('at-parent3').disabled = true;
+  document.getElementById('at-parent4').innerHTML = '<option value="">—</option>'; document.getElementById('at-parent4').disabled = true;
+}
+
+function atUpdateParent3() {
+  const line = document.getElementById('at-line').value;
+  const phase = document.getElementById('at-phase').value;
+  const p3 = document.getElementById('at-parent3');
+  if (!phase) { p3.innerHTML = '<option value="">— select phase first —</option>'; p3.disabled = true; return; }
+  const tasks = displayData.filter(r => r.sheet === line && r.phase === phase && r.level === 3);
+  p3.innerHTML = '<option value="">— select —</option>' + tasks.map(r => `<option value="${r.wbs}">${r.wbs} — ${r.task}</option>`).join('');
+  p3.disabled = false;
+  document.getElementById('at-parent4').innerHTML = '<option value="">— none (add at level 4) —</option>'; document.getElementById('at-parent4').disabled = true;
+}
+
+function atUpdateParent4() {
+  const line = document.getElementById('at-line').value;
+  const p3wbs = document.getElementById('at-parent3').value;
+  const p4 = document.getElementById('at-parent4');
+  if (!p3wbs) { p4.innerHTML = '<option value="">—</option>'; p4.disabled = true; return; }
+  const tasks = displayData.filter(r => r.sheet === line && r.level === 4 && r.wbs.startsWith(p3wbs + '.'));
+  p4.innerHTML = '<option value="">— none (add at level 4) —</option>' + tasks.map(r => `<option value="${r.wbs}">${r.wbs} — ${r.task}</option>`).join('');
+  p4.disabled = tasks.length === 0;
+}
+
+function calcNewWbs(parentWbs, sheet) {
+  const parentLevel = parentWbs.split('.').length;
+  const children = displayData.filter(r => r.sheet === sheet && r.level === parentLevel + 1 && r.wbs.startsWith(parentWbs + '.'));
+  if (!children.length) return parentWbs + '.1';
+  const max = Math.max(...children.map(r => parseInt(r.wbs.split('.').pop()) || 0));
+  return parentWbs + '.' + (max + 1);
+}
+
+function findInsertAfter(parentWbs, sheet) {
+  // Last _rowIdx in the parent's entire subtree
+  const subtree = displayData.filter(r => r.sheet === sheet && (r.wbs === parentWbs || r.wbs.startsWith(parentWbs + '.')));
+  return subtree.length ? Math.max(...subtree.map(r => r._rowIdx)) : null;
+}
+
+async function submitAddTask() {
+  const line      = document.getElementById('at-line').value;
+  const phase     = document.getElementById('at-phase').value;
+  const p3        = document.getElementById('at-parent3').value;
+  const p4        = document.getElementById('at-parent4').value;
+  const taskName  = document.getElementById('at-task').value.trim();
+  const dateRaw   = document.getElementById('at-date').value;
+  const resp      = document.getElementById('at-responsible').value.trim();
+  const status    = document.getElementById('at-status').value;
+  const comment   = document.getElementById('at-comment').value.trim();
+
+  if (!line || !phase || !p3 || !taskName) {
+    showToast('Line, Phase, Category and Task name are required', 'error'); return;
+  }
+  const parentWbs = p4 || p3;
+  const newWbs    = calcNewWbs(parentWbs, line);
+  const newLevel  = newWbs.split('.').length;
+  const insertAfter = findInsertAfter(parentWbs, line);
+  if (!insertAfter) { showToast('Cannot determine insertion position', 'error'); return; }
+
+  let dateStr = '';
+  if (dateRaw) { const [y,m,d] = dateRaw.split('-'); dateStr = `${d}-${m}-${y}`; }
+
+  // Map display name back to CONFIG sheet name
+  const sheetName = CONFIG.sheets.find(s => normalizeSheetName(s) === line) || line;
+  const insertRow = insertAfter + 1;
+
+  showToast('Adding task...', 'info');
+  try {
+    const token = await getToken();
+    const base = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/workbook/worksheets/${encodeURIComponent(sheetName)}`;
+    const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+    // Step 1: insert blank row by shifting down
+    const ins = await fetchWithTimeout(`${base}/range(address='B${insertRow}:J${insertRow}')/insert`,
+      { method: 'POST', headers, body: JSON.stringify({ shift: 'Down' }) }, 15000);
+    if (!ins.ok) { const t = await ins.text(); throw new Error(`Insert ${ins.status}: ${t}`); }
+
+    // Step 2: write data — B=level, C=wbs, D=task, E=empty, F=date, G=responsible, H=empty, I=status, J=comment
+    const values = [[newLevel, newWbs, taskName, '', dateStr, resp, '', status, comment]];
+    const wr = await fetchWithTimeout(`${base}/range(address='B${insertRow}:J${insertRow}')`,
+      { method: 'PATCH', headers, body: JSON.stringify({ values }) }, 15000);
+    if (!wr.ok) { const t = await wr.text(); throw new Error(`Write ${wr.status}: ${t}`); }
+
+    showToast(`Task "${newWbs} — ${taskName}" added!`, 'success');
+    closeAddModal();
+    await fetchExcelData(); // refresh live data
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+    console.error('Add task error:', e);
+  }
 }
 
 async function getToken() {
@@ -879,12 +1094,16 @@ function updateAuthUI(online, cacheTime) {
     logoutBtn.style.display = 'inline';
     refreshBtn.style.display = 'inline';
     cacheBar.style.display = 'none';
+    const addBtnOnline = document.getElementById('add-task-btn');
+    if (addBtnOnline) { addBtnOnline.disabled = false; addBtnOnline.style.opacity = '1'; }
   } else {
     txt.textContent = 'Offline';
     userName.style.display = 'none';
     loginBtn.style.display = 'inline';
     logoutBtn.style.display = 'none';
     refreshBtn.style.display = 'none';
+    const addBtn = document.getElementById('add-task-btn');
+    if (addBtn) { addBtn.disabled = !online; addBtn.style.opacity = online ? '1' : '0.4'; }
     if (cacheTime) {
       const dt = new Date(cacheTime);
       document.getElementById('cache-time').textContent =
@@ -918,6 +1137,7 @@ function badgeClass(s) {
   if (sl.includes('operation'))        return 'badge-operation';
   if (sl.includes('procurement'))      return 'badge-procurement';
   if (sl.includes('on hold'))          return 'badge-onhold';
+  if (sl.includes('void'))             return 'badge-other';
   return 'badge-other';
 }
 
@@ -945,12 +1165,50 @@ function populateFilters(data) {
   statusSel.value = prevStatus;
 }
 
-function resetFilters() {
-  ['f-line','f-phase','f-resp','f-status'].forEach(id => document.getElementById(id).value = '');
+// ── Phase multi-select helpers ──────────────────────────────────
+function getSelectedPhases() {
+  return [...document.querySelectorAll('#phase-ms-dropdown input[type=checkbox]:checked')]
+    .map(cb => cb.value);
+}
+
+function updatePhaseLabel() {
+  const sel = getSelectedPhases();
+  const btn = document.getElementById('phase-ms-btn');
+  if (!btn) return;
+  if (sel.length === 0) { btn.textContent = 'All Phases'; btn.classList.remove('active'); }
+  else if (sel.length === 1) { btn.textContent = sel[0]; btn.classList.add('active'); }
+  else { btn.textContent = sel.length + ' phases'; btn.classList.add('active'); }
+}
+
+function onPhaseCheckChange() {
+  updatePhaseLabel();
   render();
 }
 
-['f-line','f-phase','f-resp','f-status'].forEach(id =>
+function togglePhaseDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('phase-ms-dropdown');
+  const open = dd.style.display === 'block';
+  dd.style.display = open ? 'none' : 'block';
+}
+
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('phase-ms-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    const dd = document.getElementById('phase-ms-dropdown');
+    if (dd) dd.style.display = 'none';
+  }
+});
+// ───────────────────────────────────────────────────────────────
+
+function resetFilters() {
+  ['f-line','f-level','f-resp','f-status'].forEach(id => document.getElementById(id).value = '');
+  document.querySelectorAll('#phase-ms-dropdown input[type=checkbox]').forEach(cb => cb.checked = false);
+  updatePhaseLabel();
+  render();
+}
+
+['f-line','f-level','f-resp','f-status'].forEach(id =>
   document.getElementById(id)?.addEventListener('change', render)
 );
 
@@ -959,18 +1217,20 @@ function resetFilters() {
 // ═══════════════════════════════════════════════════════════════
 function render() {
   const fLine   = document.getElementById('f-line').value;
-  const fPhase  = document.getElementById('f-phase').value;
+  const fPhases = getSelectedPhases();
   const fResp   = document.getElementById('f-resp').value;
   const fStatus = document.getElementById('f-status').value;
-  const hasFilter = fLine || fPhase || fResp || fStatus;
+  const fLevel  = parseInt(document.getElementById('f-level').value) || 0;
+  const hasFilter = fLine || fPhases.length || fResp || fStatus || fLevel;
 
   // Step 1: direct matches
   const matchedIdx = new Set();
   displayData.forEach((r, i) => {
-    if (fLine   && r.sheet       !== fLine)   return;
-    if (fPhase  && r.phase       !== fPhase)  return;
+    if (fLine            && r.sheet       !== fLine)             return;
+    if (fPhases.length   && !fPhases.includes(r.phase))          return;
     if (fResp   && r.responsible !== fResp)   return;
     if (fStatus && r.status      !== fStatus) return;
+    if (fLevel  && r.level       !== fLevel)  return;
     matchedIdx.add(i);
   });
 
@@ -1012,7 +1272,14 @@ function render() {
 
     const indent = `indent-${Math.min(r.level, 5)}`;
     const dateHtml = r.deadline && r.deadline !== 'N/A' ? r.deadline : (r.deadline === 'N/A' ? '—' : '');
-    const respHtml = r.responsible ? `<span class="chip">${r.responsible}</span>` : '';
+    let respHtml;
+    if (isOnline) {
+      const safeResp = (r.responsible||'').replace(/"/g,'&quot;');
+      respHtml = `<input class="resp-input" type="text" value="${safeResp}"
+        placeholder="Responsible..." oninput="onResponsibleChange(this,'${key}')">`;
+    } else {
+      respHtml = r.responsible ? `<span class="chip">${r.responsible}</span>` : '';
+    }
 
     let statusHtml, commentHtml;
     if (isOnline) {
@@ -1070,6 +1337,40 @@ function onCommentChange(input, key) {
   const status = statusEl ? statusEl.value : (row.status || '');
   row.comment = input.value;
   saveCell(row, status, input.value);
+}
+
+function onResponsibleChange(input, key) {
+  const row = getRowByKey(key);
+  if (!row) return;
+  row.responsible = input.value;
+  saveResponsible(row, input.value);
+}
+
+async function saveResponsible(row, newResponsible) {
+  const key = row._sheetName + '_' + row._rowIdx;
+  const respTimerKey = 'resp_' + key;
+  clearTimeout(saveTimers[respTimerKey]);
+  saveTimers[respTimerKey] = setTimeout(async () => {
+    const respEl = document.querySelector(`[data-key="${key}"] .resp-input`);
+    if (respEl) respEl.classList.add('saving');
+    try {
+      const token = await getToken();
+      const addr = `G${row._rowIdx}`;
+      const url = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/workbook/worksheets('${encodeURIComponent(row._sheetName)}')/range(address='${addr}')`;
+      const resp = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [[newResponsible]] })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      showToast("&#10003; Saved", "success");
+      saveToCache(displayData);
+    } catch(e) {
+      showToast("Save error: " + e.message, "error");
+    } finally {
+      if (respEl) respEl.classList.remove('saving');
+    }
+  }, 800);
 }
 
 function getRowByKey(key) {
