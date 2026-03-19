@@ -67,6 +67,18 @@ td.comments-col { min-width: 180px; }
 .indent-4 { padding-left: 46px; }
 .indent-5 { padding-left: 62px; color: #555; font-size: 12px; }
 
+/* Inline add-subtask button */
+.task-cell-wrap { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; }
+.add-sub-btn {
+  flex-shrink: 0; opacity: 0; pointer-events: none; transition: opacity .15s;
+  background: none; border: 1.5px solid #4a6fa5; border-radius: 50%;
+  width: 17px; height: 17px; line-height: 1; font-size: 14px; font-weight: 700;
+  color: #4a6fa5; cursor: pointer; padding: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+tr:hover .add-sub-btn { opacity: 1; pointer-events: auto; }
+.add-sub-btn:hover { background: #4a6fa5; color: #fff; }
+
 /* Row level background colours */
 tr.lvl-1 td { background-color: #D6E4F0; }
 tr.lvl-2 td { background-color: #EAF2F8; }
@@ -730,6 +742,47 @@ function closeAddModal() {
   document.getElementById('add-task-modal').style.display = 'none';
 }
 
+// Open modal pre-filled based on the clicked row's context
+function openAddModalForRow(key) {
+  const row = getRowByKey(key);
+  if (!row) { openAddModal(); return; }
+
+  openAddModal(); // reset & populate Line select
+
+  const wbsParts = (row.wbs || '').split('.');
+
+  // Pre-fill Line
+  const lineEl = document.getElementById('at-line');
+  lineEl.value = row.sheet;
+  atUpdatePhase(); // populates Phase dropdown
+
+  // Pre-fill Phase
+  if (row.phase) {
+    const phaseEl = document.getElementById('at-phase');
+    phaseEl.value = row.phase;
+    atUpdateParent3(); // populates Category (level 3) dropdown
+  }
+
+  // Pre-fill Category (level 3 ancestor or self)
+  const p3Wbs = row.level === 3 ? row.wbs
+              : row.level >  3 ? wbsParts.slice(0, 3).join('.')
+              : null;
+  if (p3Wbs) {
+    const p3El = document.getElementById('at-parent3');
+    p3El.value = p3Wbs;
+    atUpdateParent4(); // populates Parent task (level 4) dropdown
+  }
+
+  // Pre-fill Parent task (level 4 ancestor or self) → new task will be level 5
+  const p4Wbs = row.level === 4 ? row.wbs
+              : row.level >= 5  ? wbsParts.slice(0, 4).join('.')
+              : null;
+  if (p4Wbs) {
+    const p4El = document.getElementById('at-parent4');
+    p4El.value = p4Wbs;
+  }
+}
+
 function atUpdatePhase() {
   const line = document.getElementById('at-line').value;
   const ps = document.getElementById('at-phase');
@@ -1364,9 +1417,12 @@ function render() {
       commentHtml = `<span style="color:#555;font-size:11px">${r.comment||''}</span>`;
     }
 
+    const addBtn = isOnline
+      ? `<button class="add-sub-btn" onclick="openAddModalForRow('${key}')" title="Add subtask">+</button>`
+      : '';
     tr.innerHTML = `
       <td class="wbs-col">${r.wbs}</td>
-      <td class="task-col"><span class="${indent}">${r.task}</span></td>
+      <td class="task-col"><span class="task-cell-wrap"><span class="${indent}">${r.task}</span>${addBtn}</span></td>
       <td class="date-col">${dateHtml}</td>
       <td class="resp-col">${respHtml}</td>
       <td class="status-col">${statusHtml}</td>
