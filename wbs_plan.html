@@ -859,14 +859,16 @@ function parseSheetRows(sheetName, values) {
   const rows = [];
   for (let i = headerIdx + 1; i < values.length; i++) {
     const row = values[i];
-    const level   = parseInt(row[1]) || 0;
+    // Excel columns: A(0)=Level, B(1)=WBS Code, C(2)=Task Name,
+    //   D(3)=Description, E(4)=Deliverables, F(5)=Responsible,
+    //   G(6)=Deadline, H(7)=Decision Gate, I(8)=Status, J(9)=Link
+    const level   = parseInt(row[0]) || 0;
+    const wbsCode = String(row[1] || '').trim();   // col B — WBS Code
     const task    = String(row[2] || '').trim();   // col C — Task/Scope
-    // col D (row[3]) = Description of Work — skipped
-    const wbsCode = String(row[4] || '').trim();   // col E — WBS Code
     if (!level || !task) continue;
-    if (task.toLowerCase().includes('wbs element')) continue;
+    if (task.toLowerCase().includes('wbs element') || task.toLowerCase().includes('wbs level')) continue;
     const responsible = String(row[5] || '').trim();  // col F — Responsible
-    const deadline    = formatDate(row[6]);             // col G — Planned Date
+    const deadline    = formatDate(row[6]);             // col G — Deadline
     rows.push({
       sheet:       displayName,
       level:       level,
@@ -875,8 +877,8 @@ function parseSheetRows(sheetName, values) {
       phase:       getPhase(wbsCode),
       deadline:    deadline,
       responsible: responsible,
-      status:      String(row[8] || '').trim(),   // col I
-      comment:     String(row[9] || '').trim(),   // col J
+      status:      String(row[8] || '').trim(),   // col I — Status
+      comment:     String(row[9] || '').trim(),   // col J — Link to File
       _sheetName:  sheetName,
       _rowIdx:     i + 1   // 1-based Excel row number
     });
@@ -1278,7 +1280,7 @@ function render() {
     let respHtml;
     if (isOnline) {
       const respOptions = ['', ...[...new Set(displayData.map(d=>d.responsible).filter(Boolean))].sort()]
-        .map(v => `<option value="${v}" ${r.responsible===v?'selected':''}>${v||'— Responsible —'}</option>`).join('');
+        .map(v => `<option value="${v}" ${r.responsible===v?'selected':''}>${v}</option>`).join('');
       respHtml = `<select class="resp-input status-select" onchange="onResponsibleChange(this,'${key}')">${respOptions}</select>`;
     } else {
       respHtml = r.responsible ? `<span class="chip">${r.responsible}</span>` : '';
@@ -1287,9 +1289,12 @@ function render() {
     let statusHtml, commentHtml;
     if (isOnline) {
       // Editable
-      const opts = STATUS_OPTIONS.map(o =>
-        `<option value="${o}" ${r.status===o?'selected':''}>${o||'— wybierz —'}</option>`
-      ).join('');
+      // Build status options; if row has a legacy value not in STATUS_OPTIONS, show it as disabled
+      const isLegacy = r.status && !STATUS_OPTIONS.includes(r.status);
+      const opts = [
+        ...(isLegacy ? [`<option value="${r.status}" selected disabled>${r.status}</option>`] : []),
+        ...STATUS_OPTIONS.map(o => `<option value="${o}" ${(!isLegacy && r.status===o)?'selected':''}>${o}</option>`)
+      ].join('');
       statusHtml = `<select class="status-select" onchange="onStatusChange(this,'${key}')">
         ${opts}</select>`;
       const safeComment = (r.comment||'').replace(/"/g,'&quot;');
