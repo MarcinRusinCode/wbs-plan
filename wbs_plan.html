@@ -801,14 +801,16 @@ async function submitAddTask() {
     const base = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/workbook/worksheets/${encodeURIComponent(sheetName)}`;
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-    // Step 1: insert blank row by shifting down
-    const ins = await fetchWithTimeout(`${base}/range(address='B${insertRow}:J${insertRow}')/insert`,
+    // Step 1: insert blank row by shifting down — range A:J to include Lvl column (col A)
+    const ins = await fetchWithTimeout(`${base}/range(address='A${insertRow}:J${insertRow}')/insert`,
       { method: 'POST', headers, body: JSON.stringify({ shift: 'Down' }) }, 15000);
     if (!ins.ok) { const t = await ins.text(); throw new Error(`Insert ${ins.status}: ${t}`); }
 
-    // Step 2: write data — B=level, C=wbs, D=task, E=empty, F=date, G=responsible, H=empty, I=status, J=comment
-    const values = [[newLevel, newWbs, taskName, '', dateStr, resp, '', status, comment]];
-    const wr = await fetchWithTimeout(`${base}/range(address='B${insertRow}:J${insertRow}')`,
+    // Step 2: write data
+    // Excel columns: A=Lvl, B=WBS Code, C=Task/Scope, D=Description, E=Deliverables,
+    //                F=Responsible, G=Deadline, H=Decision Gate, I=Status, J=Comment
+    const values = [[newLevel, newWbs, taskName, '', '', resp, dateStr, '', status, comment]];
+    const wr = await fetchWithTimeout(`${base}/range(address='A${insertRow}:J${insertRow}')`,
       { method: 'PATCH', headers, body: JSON.stringify({ values }) }, 15000);
     if (!wr.ok) { const t = await wr.text(); throw new Error(`Write ${wr.status}: ${t}`); }
 
