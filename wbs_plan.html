@@ -801,8 +801,9 @@ async function submitAddTask() {
     const base = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/workbook/worksheets/${encodeURIComponent(sheetName)}`;
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
-    // Step 1: insert blank row by shifting down — range A:J to include Lvl column (col A)
-    const ins = await fetchWithTimeout(`${base}/range(address='A${insertRow}:J${insertRow}')/insert`,
+    // Step 1: insert a full blank row using row-number notation (e.g. "15:15")
+    // Using A:J notation returns 500 from Graph API; full-row "N:N" is reliable
+    const ins = await fetchWithTimeout(`${base}/range(address='${insertRow}:${insertRow}')/insert`,
       { method: 'POST', headers, body: JSON.stringify({ shift: 'Down' }) }, 15000);
     if (!ins.ok) { const t = await ins.text(); throw new Error(`Insert ${ins.status}: ${t}`); }
 
