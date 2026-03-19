@@ -187,7 +187,7 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
       </div>
       <div class="at-field">
         <label>Responsible</label>
-        <input id="at-responsible" type="text" placeholder="Name">
+        <select id="at-responsible"></select>
       </div>
       <div class="at-field">
         <label>Status</label>
@@ -706,6 +706,9 @@ function openAddModal() {
   });
   const ss = document.getElementById('at-status');
   ss.innerHTML = STATUS_OPTIONS.map(o => `<option value="${o}">${o || '— select —'}</option>`).join('');
+  const rs = document.getElementById('at-responsible');
+  const respList = ['', ...[...new Set(displayData.map(r => r.responsible).filter(Boolean))].sort()];
+  rs.innerHTML = respList.map(v => `<option value="${v}">${v || '— select —'}</option>`).join('');
   ['at-phase','at-parent3','at-parent4'].forEach(id => {
     const el = document.getElementById(id);
     el.innerHTML = '<option value="">—</option>';
@@ -713,7 +716,6 @@ function openAddModal() {
   });
   document.getElementById('at-task').value = '';
   document.getElementById('at-date').value = '';
-  document.getElementById('at-responsible').value = '';
   document.getElementById('at-comment').value = '';
   document.getElementById('add-task-modal').style.display = 'flex';
 }
@@ -815,8 +817,10 @@ async function submitAddTask() {
       { method: 'PATCH', headers, body: JSON.stringify({ values }) }, 15000);
     if (!wr.ok) { const t = await wr.text(); throw new Error(`Write ${wr.status}: ${t}`); }
 
-    showToast(`Task "${newWbs} — ${taskName}" added!`, 'success');
     closeAddModal();
+    showToast(`Task "${newWbs} — ${taskName}" added! Refreshing data…`, 'success');
+    // Wait 2s for Excel/Graph API to commit the changes before re-fetching
+    await new Promise(r => setTimeout(r, 2000));
     await fetchExcelData(); // refresh live data
   } catch(e) {
     showToast('Error: ' + e.message, 'error');
