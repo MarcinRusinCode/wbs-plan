@@ -67,6 +67,12 @@ td.comments-col { min-width: 180px; }
 .indent-4 { padding-left: 46px; }
 .indent-5 { padding-left: 62px; color: #555; font-size: 12px; }
 
+/* Row level background colours */
+tr.lvl-1 td { background-color: #D6E4F0; }
+tr.lvl-2 td { background-color: #EAF2F8; }
+tr.lvl-3 td { background-color: #F4F9FC; }
+/* lvl-4 and lvl-5 stay white (default) */
+
 /* Sheet section divider */
 tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-size: 12px; padding: 6px 10px; }
 
@@ -1316,7 +1322,8 @@ function render() {
       tbody.appendChild(hdr);
     }
     const tr = document.createElement('tr');
-    if (r.isAncestor) tr.className = 'parent-context';
+    const lvlClass = r.level >= 1 && r.level <= 3 ? `lvl-${r.level}` : '';
+    tr.className = [lvlClass, r.isAncestor ? 'parent-context' : ''].filter(Boolean).join(' ');
     const key = (r._sheetName||r.sheet) + '_' + r._rowIdx;
     tr.setAttribute('data-key', key);
 
