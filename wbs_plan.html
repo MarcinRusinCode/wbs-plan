@@ -314,7 +314,7 @@ const CONFIG = {
 const STATUS_OPTIONS = [
   "", "Not started", "In progress", "Done",
   "Mechanical Completion", "Ready for commissioning",
-  "Ready for handover", "Ready for operation", "On hold", "Void"
+  "On hold", "Void"
 ];
 
 // ═══════════════════════════════════════════════════════════════
@@ -859,21 +859,24 @@ function parseSheetRows(sheetName, values) {
   const rows = [];
   for (let i = headerIdx + 1; i < values.length; i++) {
     const row = values[i];
-    const level = parseInt(row[1]) || 0;
-    const wbsCode = String(row[2] || '').trim();
-    const task    = String(row[3] || '').trim();
-    if (!level || !wbsCode || !task) continue;
-    if (task.toLowerCase().includes('wbs element') || wbsCode.toLowerCase().includes('wbs')) continue;
+    const level   = parseInt(row[1]) || 0;
+    const task    = String(row[2] || '').trim();   // col C — Task/Scope
+    // col D (row[3]) = Description of Work — skipped
+    const wbsCode = String(row[4] || '').trim();   // col E — WBS Code
+    if (!level || !task) continue;
+    if (task.toLowerCase().includes('wbs element')) continue;
+    const responsible = String(row[5] || '').trim();  // col F — Responsible
+    const deadline    = formatDate(row[6]);             // col G — Planned Date
     rows.push({
       sheet:       displayName,
       level:       level,
       wbs:         wbsCode,
       task:        task,
       phase:       getPhase(wbsCode),
-      deadline:    formatDate(row[5]),
-      responsible: String(row[6] || '').trim(),
-      status:      String(row[8] || '').trim(),   // col I (0-indexed: 8)
-      comment:     String(row[9] || '').trim(),   // col J (0-indexed: 9)
+      deadline:    deadline,
+      responsible: responsible,
+      status:      String(row[8] || '').trim(),   // col I
+      comment:     String(row[9] || '').trim(),   // col J
       _sheetName:  sheetName,
       _rowIdx:     i + 1   // 1-based Excel row number
     });
@@ -1274,9 +1277,9 @@ function render() {
     const dateHtml = r.deadline && r.deadline !== 'N/A' ? r.deadline : (r.deadline === 'N/A' ? '—' : '');
     let respHtml;
     if (isOnline) {
-      const safeResp = (r.responsible||'').replace(/"/g,'&quot;');
-      respHtml = `<input class="resp-input" type="text" value="${safeResp}"
-        placeholder="Responsible..." oninput="onResponsibleChange(this,'${key}')">`;
+      const respOptions = ['', ...[...new Set(displayData.map(d=>d.responsible).filter(Boolean))].sort()]
+        .map(v => `<option value="${v}" ${r.responsible===v?'selected':''}>${v||'— Responsible —'}</option>`).join('');
+      respHtml = `<select class="resp-input status-select" onchange="onResponsibleChange(this,'${key}')">${respOptions}</select>`;
     } else {
       respHtml = r.responsible ? `<span class="chip">${r.responsible}</span>` : '';
     }
@@ -1352,10 +1355,10 @@ async function saveResponsible(row, newResponsible) {
   clearTimeout(saveTimers[respTimerKey]);
   saveTimers[respTimerKey] = setTimeout(async () => {
     const respEl = document.querySelector(`[data-key="${key}"] .resp-input`);
-    if (respEl) respEl.classList.add('saving');
+    if (respEl) respEl.setAttribute('disabled', 'true');
     try {
       const token = await getToken();
-      const addr = `G${row._rowIdx}`;
+      const addr = `F${row._rowIdx}`;
       const url = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/workbook/worksheets('${encodeURIComponent(row._sheetName)}')/range(address='${addr}')`;
       const resp = await fetch(url, {
         method: 'PATCH',
@@ -1368,7 +1371,7 @@ async function saveResponsible(row, newResponsible) {
     } catch(e) {
       showToast("Save error: " + e.message, "error");
     } finally {
-      if (respEl) respEl.classList.remove('saving');
+      if (respEl) respEl.removeAttribute('disabled');
     }
   }, 800);
 }
