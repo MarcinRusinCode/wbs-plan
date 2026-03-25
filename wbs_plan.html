@@ -327,7 +327,8 @@ const CONFIG = {
   clientId: "65c461e2-cb59-4703-8170-3814618806a0",
   tenantId: "fd7887f1-3dd1-413b-9fac-f1f3c34d7ce7",
   driveId:  "b!4ukeEgKJUkGwP62RcVIxqzy4aRXDNrtHjY25F82-ggeI5xA4gqNyQqlzNrGriS2d",
-  itemId:   "01FCOII4TKBOY6VPBCXBAIOX3YE5VPIWPK",
+  // filePath: path relative to drive root — update only if file is renamed/moved
+  filePath: "Delte dokumenter/2.8kt CONSTRUCTION/Plan/Gjenkraft_WBS_Plan_19.xlsx",
   sheets: [
     "1. Cutting line",
     "2. Downsizing line",
@@ -341,6 +342,13 @@ const CONFIG = {
   scopes: ["Files.ReadWrite.All", "User.Read"],
   redirectUri: "https://marcinrusincode.github.io/wbs-plan/wbs_plan.html"
 };
+
+// Returns path-based Graph API base for the configured Excel file.
+// Format: /drives/{id}/root:/{encoded path}: — works regardless of itemId.
+function fileApiBase() {
+  const encoded = CONFIG.filePath.split('/').map(encodeURIComponent).join('/');
+  return `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/root:/${encoded}:`;
+}
 
 const STATUS_OPTIONS = [
   "", "Not started", "In progress", "Done", "On hold", "Void"
@@ -869,7 +877,7 @@ async function submitAddTask() {
   showToast('Adding task...', 'info');
   try {
     const token = await getToken();
-    const base = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/workbook/worksheets/${encodeURIComponent(sheetName)}`;
+    const base = `${fileApiBase()}/workbook/worksheets/${encodeURIComponent(sheetName)}`;
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
     // Step 1: insert a full blank row using row-number notation (e.g. "15:15")
@@ -1006,7 +1014,7 @@ async function fetchExcelData() {
     // Download the raw XLSX binary — one request instead of 8 workbook API calls.
     // The workbook API opens Excel Online on every call (30-60 sec); file download is ~3 sec.
     loadEl.innerHTML = '<span class="spinner"></span>Pobieranie pliku Excel z SharePoint...';
-    const fileUrl = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/content`;
+    const fileUrl = `${fileApiBase()}/content`;
     const resp = await fetchWithTimeout(fileUrl, { headers: { Authorization: `Bearer ${token}` } }, 45000);
     if (!resp.ok) {
       const errText = await resp.text().catch(() => '');
@@ -1061,7 +1069,7 @@ async function saveCell(row, newStatus, newComment) {
       const token = await getToken();
       // Excel row address: row[8]=I, row[9]=J → address I{row}:J{row}
       const addr = `I${row._rowIdx}:J${row._rowIdx}`;
-      const url = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/workbook/worksheets('${encodeURIComponent(row._sheetName)}')/range(address='${addr}')`;
+      const url = `${fileApiBase()}/workbook/worksheets('${encodeURIComponent(row._sheetName)}')/range(address='${addr}')`;
       const resp = await fetch(url, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -1523,7 +1531,7 @@ async function saveResponsible(row, newResponsible) {
     try {
       const token = await getToken();
       const addr = `F${row._rowIdx}`;
-      const url = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${CONFIG.itemId}/workbook/worksheets('${encodeURIComponent(row._sheetName)}')/range(address='${addr}')`;
+      const url = `${fileApiBase()}/workbook/worksheets('${encodeURIComponent(row._sheetName)}')/range(address='${addr}')`;
       const resp = await fetch(url, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
