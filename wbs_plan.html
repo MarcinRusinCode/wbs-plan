@@ -343,11 +343,27 @@ const CONFIG = {
   redirectUri: "https://marcinrusincode.github.io/wbs-plan/wbs_plan.html"
 };
 
-// Returns path-based Graph API base for the configured Excel file.
-// Format: /drives/{id}/root:/{encoded path}: — works regardless of itemId.
-function fileApiBase() {
+// Path-based URL — used only for file download (content).
+// PATCH/POST (workbook API) requires itemId, so we resolve it once per session.
+function fileDownloadUrl() {
   const encoded = CONFIG.filePath.split('/').map(encodeURIComponent).join('/');
-  return `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/root:/${encoded}:`;
+  return `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/root:/${encoded}:/content`;
+}
+
+let _resolvedItemId = null;
+async function getItemId(token) {
+  if (_resolvedItemId) return _resolvedItemId;
+  const encoded = CONFIG.filePath.split('/').map(encodeURIComponent).join('/');
+  const url = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/root:/${encoded}`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!r.ok) throw new Error(`Cannot resolve file itemId: HTTP ${r.status}`);
+  const data = await r.json();
+  _resolvedItemId = data.id;
+  return _resolvedItemId;
+}
+
+function workbookSheetBase(itemId, sheetName) {
+  return `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(sheetName)}')`;
 }
 
 const STATUS_OPTIONS = [
@@ -877,7 +893,8 @@ async function submitAddTask() {
   showToast('Adding task...', 'info');
   try {
     const token = await getToken();
-    const base = `${fileApiBase()}/workbook/worksheets/${encodeURIComponent(sheetName)}`;
+    const itemId = await getItemId(token);
+    const base = `${workbookSheetBase(itemId, sheetName)}`;
     const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
 
     // Step 1: insert a full blank row using row-number notation (e.g. "15:15")
@@ -1014,7 +1031,7 @@ async function fetchExcelData() {
     // Download the raw XLSX binary — one request instead of 8 workbook API calls.
     // The workbook API opens Excel Online on every call (30-60 sec); file download is ~3 sec.
     loadEl.innerHTML = '<span class="spinner"></span>Pobieranie pliku Excel z SharePoint...';
-    const fileUrl = `${fileApiBase()}/content`;
+    const fileUrl = fileDownloadUrl();
     const resp = await fetchWithTimeout(fileUrl, { headers: { Authorization: `Bearer ${token}` } }, 45000);
     if (!resp.ok) {
       const errText = await resp.text().catch(() => '');
@@ -1067,9 +1084,10 @@ async function saveCell(row, newStatus, newComment) {
     if (commentEl) commentEl.classList.add('saving');
     try {
       const token = await getToken();
+      const itemId = await getItemId(token);
       // Excel row address: row[8]=I, row[9]=J → address I{row}:J{row}
       const addr = `I${row._rowIdx}:J${row._rowIdx}`;
-      const url = `${fileApiBase()}/workbook/worksheets('${encodeURIComponent(row._sheetName)}')/range(address='${addr}')`;
+      const url = `${workbookSheetBase(itemId, row._sheetName)}/range(address='${addr}')`;
       const resp = await fetch(url, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -1530,8 +1548,9 @@ async function saveResponsible(row, newResponsible) {
     if (respEl) respEl.setAttribute('disabled', 'true');
     try {
       const token = await getToken();
+      const itemId = await getItemId(token);
       const addr = `F${row._rowIdx}`;
-      const url = `${fileApiBase()}/workbook/worksheets('${encodeURIComponent(row._sheetName)}')/range(address='${addr}')`;
+      const url = `${workbookSheetBase(itemId, row._sheetName)}/range(address='${addr}')`;
       const resp = await fetch(url, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
