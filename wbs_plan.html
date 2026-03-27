@@ -106,6 +106,18 @@ td.comments-col { min-width: 180px; }
 tr:hover .add-sub-btn { opacity: 1; pointer-events: auto; }
 .add-sub-btn:hover { color: #4a6fa5; }
 
+/* Clickable task name */
+.task-name-link { cursor:pointer; }
+.task-name-link:hover { color:#4a6fa5; text-decoration:underline; }
+/* Delete button */
+.danger-btn { padding:5px 14px; background:#fff; color:#dc3545; border:1px solid #dc3545; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
+.danger-btn:hover { background:#dc3545; color:#fff; }
+/* Edit modal meta info */
+.et-meta { display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+.et-meta-chip { background:#f0f4f8; border-radius:6px; padding:3px 10px; font-size:11px; color:#555; }
+.et-meta-chip span { font-weight:700; color:#1a1a2e; }
+.et-readonly { color:#888; font-style:italic; font-size:12px; padding:4px 0; }
+
 /* Date editing */
 .date-cell { display:inline-flex; align-items:center; gap:5px; }
 .date-cal-btn { opacity:0; pointer-events:none; transition:opacity .15s,color .15s; background:none; border:none; padding:0; font-size:13px; cursor:pointer; color:#aab4c0; line-height:1; flex-shrink:0; }
@@ -269,6 +281,47 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
     <div class="at-buttons">
       <button onclick="closeAddModal()">Cancel</button>
       <button class="primary" onclick="submitAddTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div id="edit-task-modal" style="display:none">
+  <div id="add-task-card">
+    <h2>&#9998; Edit Task</h2>
+    <div class="et-meta">
+      <div class="et-meta-chip">WBS: <span id="et-wbs"></span></div>
+      <div class="et-meta-chip">Line: <span id="et-line"></span></div>
+      <div class="et-meta-chip">Phase: <span id="et-phase"></span></div>
+    </div>
+    <div class="at-grid">
+      <div class="at-field at-full">
+        <label class="at-required">Task name</label>
+        <input id="et-task" type="text" placeholder="Task name">
+      </div>
+      <div class="at-field">
+        <label>Planned Date</label>
+        <div id="et-date-wrap" style="padding:4px 0"></div>
+      </div>
+      <div class="at-field">
+        <label>Responsible</label>
+        <select id="et-responsible"></select>
+      </div>
+      <div class="at-field">
+        <label>Status</label>
+        <div id="et-status-wrap" style="padding:4px 0"></div>
+      </div>
+      <div class="at-field at-full">
+        <label>Comment</label>
+        <input id="et-comment" type="text" placeholder="Optional comment">
+      </div>
+    </div>
+    <div class="at-buttons" style="justify-content:space-between">
+      <button class="danger-btn" onclick="deleteTask()">&#128465; Delete</button>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeEditModal()">Cancel</button>
+        <button class="primary" onclick="submitEditTask()">Save</button>
+      </div>
     </div>
   </div>
 </div>
@@ -806,6 +859,136 @@ function skipLogin() {
   if (cached) useData(cached.data, false, cached.time);
   else useStaticData();
 }
+
+// ═══════════════════════════════════════════════════════════════
+// EDIT TASK MODAL
+// ═══════════════════════════════════════════════════════════════
+let _editKey = null;
+
+function openEditModal(key) {
+  if (!isOnline) { showToast('Sign in to edit tasks', 'error'); return; }
+  _editKey = key;
+  const row = getRowByKey(key);
+  if (!row) return;
+  const isParent = hasChildren(row, displayData);
+
+  document.getElementById('et-wbs').textContent   = row.wbs   || '—';
+  document.getElementById('et-line').textContent  = row.sheet || '—';
+  document.getElementById('et-phase').textContent = row.phase || '—';
+  document.getElementById('et-task').value    = row.task    || '';
+  document.getElementById('et-comment').value = row.comment || '';
+
+  // Responsible dropdown
+  const rs = document.getElementById('et-responsible');
+  rs.innerHTML = ['', ...getAllResponsibles()]
+    .map(v => `<option value="${v}" ${row.responsible===v?'selected':''}>${v||'— none —'}</option>`).join('');
+
+  // Date — editable for leaf, computed read-only for parent
+  const dateWrap = document.getElementById('et-date-wrap');
+  if (isParent) {
+    const d = getEarliestChildDate(row, displayData);
+    dateWrap.innerHTML = `<span class="et-readonly">&#8635; ${d||'—'} &nbsp;(computed from children)</span>`;
+  } else {
+    const val = convertToInputDate(row.deadline) || '';
+    dateWrap.innerHTML = `<input id="et-date" type="text" style="border:1px solid #ced4da;border-radius:6px;padding:4px 8px;font-size:12px;width:100%" value="${row.deadline||''}" placeholder="DD-MM-YYYY">`;
+  }
+
+  // Status — editable for leaf, computed read-only for parent
+  const statusWrap = document.getElementById('et-status-wrap');
+  if (isParent) {
+    const s = getEffectiveStatus(row, displayData);
+    statusWrap.innerHTML = s
+      ? `<span class="badge ${badgeClass(s)} status-auto">${s}</span>`
+      : `<span class="et-readonly">— computed from children —</span>`;
+  } else {
+    const isLegacy = row.status && !STATUS_OPTIONS.includes(row.status);
+    const opts = [
+      ...(isLegacy ? [`<option value="${row.status}" selected disabled>${row.status}</option>`] : []),
+      ...STATUS_OPTIONS.map(o => `<option value="${o}" ${(!isLegacy && row.status===o)?'selected':''}>${o||'— none —'}</option>`)
+    ].join('');
+    statusWrap.innerHTML = `<select id="et-status" style="border:1px solid #ced4da;border-radius:6px;padding:4px 8px;font-size:12px;width:100%">${opts}</select>`;
+  }
+
+  document.getElementById('edit-task-modal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('edit-task-modal').style.display = 'none';
+  _editKey = null;
+}
+
+async function submitEditTask() {
+  const row = getRowByKey(_editKey);
+  if (!row) return;
+  const isParent = hasChildren(row, displayData);
+
+  const newTask    = document.getElementById('et-task').value.trim();
+  const newResp    = document.getElementById('et-responsible').value;
+  const newComment = document.getElementById('et-comment').value.trim();
+  const newDate    = isParent ? (row.deadline||'') : (document.getElementById('et-date')?.value.trim()||'');
+  const newStatus  = isParent ? '' : (document.getElementById('et-status')?.value||'');
+
+  if (!newTask) { showToast('Task name is required', 'error'); return; }
+
+  // Update in-memory
+  row.task = newTask; row.responsible = newResp; row.comment = newComment;
+  if (!isParent) { row.deadline = newDate; row.status = newStatus; }
+
+  closeEditModal();
+  render();
+
+  showToast('Saving…', 'info');
+  try {
+    const token  = await getToken();
+    const itemId = await getItemId(token);
+    const base   = workbookSheetBase(itemId, row._sheetName);
+    // Excel columns: A=Lvl, B=WBS, C=Task, D='', E='', F=Responsible, G=Deadline, H='', I=Status, J=Comment
+    const values = [[row.level, row.wbs, newTask, '', '', newResp, newDate, '', newStatus, newComment]];
+    const wr = await fetch(`${base}/range(address='A${row._rowIdx}:J${row._rowIdx}')`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values })
+    });
+    if (!wr.ok) throw new Error(`HTTP ${wr.status}`);
+    showToast('✓ Saved', 'success');
+    saveToCache(displayData);
+  } catch(e) { showToast('Save error: ' + e.message, 'error'); }
+}
+
+async function deleteTask() {
+  const row = getRowByKey(_editKey);
+  if (!row) return;
+  const isParent = hasChildren(row, displayData);
+
+  const confirmMsg = isParent
+    ? `Delete "${row.task}" AND all its subtasks? This cannot be undone.`
+    : `Delete "${row.task}"? This cannot be undone.`;
+  if (!confirm(confirmMsg)) return;
+
+  // Collect rows to delete: this row + all descendants (WBS starts with row.wbs + '.')
+  const toDelete = [row, ...displayData.filter(r =>
+    r.sheet === row.sheet && r.wbs && row.wbs && r.wbs !== row.wbs && r.wbs.startsWith(row.wbs + '.')
+  )].sort((a, b) => b._rowIdx - a._rowIdx); // delete bottom-to-top to avoid index shift
+
+  closeEditModal();
+  showToast(`Deleting ${toDelete.length} row(s)…`, 'info');
+
+  try {
+    const token  = await getToken();
+    const itemId = await getItemId(token);
+    const base   = workbookSheetBase(itemId, row._sheetName);
+    for (const r of toDelete) {
+      const del = await fetch(`${base}/range(address='${r._rowIdx}:${r._rowIdx}')/delete`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shift: 'Up' }) });
+      if (!del.ok) { const t = await del.text(); throw new Error(`Delete ${del.status}: ${t}`); }
+    }
+    showToast('✓ Deleted', 'success');
+    await new Promise(r => setTimeout(r, 1500));
+    await fetchExcelData();
+  } catch(e) { showToast('Delete error: ' + e.message, 'error'); }
+}
+// ═══════════════════════════════════════════════════════════════
 
 // ═══════════════════════════════════════════════════════════════
 // ADD TASK MODAL
@@ -1814,7 +1997,7 @@ function render() {
       : '';
     tr.innerHTML = `
       <td class="wbs-col">${r.wbs}</td>
-      <td class="task-col"><span class="task-cell-wrap"><span class="${indent}">${r.task}</span>${addBtn}</span></td>
+      <td class="task-col"><span class="task-cell-wrap"><span class="${indent} task-name-link" onclick="openEditModal('${key}')">${r.task}</span>${addBtn}</span></td>
       <td class="date-col">${dateHtml}</td>
       <td class="resp-col">${respHtml}</td>
       <td class="status-col">${statusHtml}</td>
