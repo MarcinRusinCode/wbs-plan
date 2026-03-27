@@ -45,6 +45,27 @@ header h1 { font-size: 16px; font-weight: 600; letter-spacing: .3px; }
 .ms-dropdown label { display: flex; align-items: center; gap: 7px; padding: 5px 12px; font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0; color: #333; cursor: pointer; white-space: nowrap; }
 .ms-dropdown label:hover { background: #f0f4f8; }
 .ms-dropdown input[type=checkbox] { width: 13px; height: 13px; cursor: pointer; accent-color: #4a6fa5; }
+/* Settings button */
+#settings-btn { height:26px; padding:0 10px; background:#fff; color:#6c757d; border:1px solid #ced4da; border-radius:6px; cursor:pointer; font-size:16px; align-self:flex-end; box-sizing:border-box; }
+#settings-btn:hover { background:#f0f4f8; color:#4a6fa5; border-color:#4a6fa5; }
+/* Settings modal */
+#settings-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:2000; align-items:center; justify-content:center; }
+.settings-card { background:#fff; border-radius:12px; padding:24px; width:420px; max-width:95vw; box-shadow:0 8px 32px rgba(0,0,0,.18); }
+.settings-card h3 { font-size:15px; font-weight:700; margin-bottom:16px; color:#1a1a2e; }
+.settings-card h4 { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.6px; color:#6c757d; margin-bottom:10px; }
+.resp-item { display:flex; align-items:center; justify-content:space-between; padding:5px 8px; border-radius:6px; margin-bottom:3px; }
+.resp-item:hover { background:#f0f4f8; }
+.resp-item span.name { font-size:13px; color:#1a1a2e; }
+.resp-item span.from-data { font-size:10px; color:#adb5bd; font-style:italic; }
+.resp-item button.rm-btn { background:none; border:none; color:#dc3545; cursor:pointer; font-size:14px; padding:0 4px; line-height:1; }
+.resp-item button.rm-btn:hover { color:#a71d2a; }
+.settings-add-row { display:flex; gap:8px; margin-top:10px; }
+.settings-add-row input { flex:1; border:1px solid #ced4da; border-radius:6px; padding:4px 9px; font-size:12px; outline:none; }
+.settings-add-row input:focus { border-color:#4a6fa5; }
+.settings-add-row button { padding:4px 14px; background:#4a6fa5; color:#fff; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
+.settings-footer { margin-top:18px; display:flex; justify-content:flex-end; }
+.settings-footer button { padding:5px 18px; background:#e9ecef; color:#333; border:none; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; }
+.settings-footer button:hover { background:#ced4da; }
 #refresh-btn { padding: 4px 12px; background: #28a745; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; align-self: flex-end; display: none; }
 #refresh-btn:hover { background: #218838; }
 #results-count { align-self: flex-end; font-size: 11px; color: #6c757d; padding-bottom: 2px; }
@@ -84,6 +105,15 @@ td.comments-col { min-width: 180px; }
 }
 tr:hover .add-sub-btn { opacity: 1; pointer-events: auto; }
 .add-sub-btn:hover { color: #4a6fa5; }
+
+/* Date editing */
+.date-cell { display:inline-flex; align-items:center; gap:5px; }
+.date-cal-btn { opacity:0; pointer-events:none; transition:opacity .15s,color .15s; background:none; border:none; padding:0; font-size:13px; cursor:pointer; color:#aab4c0; line-height:1; flex-shrink:0; }
+tr:hover .date-cal-btn { opacity:1; pointer-events:auto; }
+.date-cal-btn:hover { color:#4a6fa5; }
+.date-hidden-input { position:absolute; width:0; height:0; opacity:0; pointer-events:none; border:none; }
+.date-auto { font-style:italic; opacity:.7; }
+.date-auto::before { content:'⟳ '; font-style:normal; font-size:9px; }
 
 /* Row level background colours */
 tr.lvl-1 td { background-color: #D6E4F0; }
@@ -297,6 +327,7 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
   </div>
   <button id="reset-btn" onclick="resetFilters()">&#8635; Reset</button>
   <button id="add-task-btn" class="header-btn primary" onclick="openAddModal()" style="align-self:flex-end; height:26px; padding:0 12px; font-size:12px; border-radius:6px; border:none; box-sizing:border-box;">&#10133; Add Task</button>
+  <button id="settings-btn" onclick="openSettings()" title="Settings">⚙</button>
   <div id="results-count"></div>
 </div>
 
@@ -318,6 +349,22 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
   </table>
 </div>
 <div id="toast-container"></div>
+
+<!-- Settings Modal -->
+<div id="settings-modal">
+  <div class="settings-card">
+    <h3>⚙ Settings</h3>
+    <h4>Responsible — persons list</h4>
+    <div id="custom-resp-list"></div>
+    <div class="settings-add-row">
+      <input id="new-resp-name" type="text" placeholder="Add new name…" onkeydown="if(event.key==='Enter')addCustomResponsible()">
+      <button onclick="addCustomResponsible()">+ Add</button>
+    </div>
+    <div class="settings-footer">
+      <button onclick="closeSettings()">Close</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ═══════════════════════════════════════════════════════════════
@@ -759,7 +806,7 @@ function openAddModal() {
   const ss = document.getElementById('at-status');
   ss.innerHTML = STATUS_OPTIONS.map(o => `<option value="${o}">${o || '— select —'}</option>`).join('');
   const rs = document.getElementById('at-responsible');
-  const respList = ['', ...[...new Set(displayData.map(r => r.responsible).filter(Boolean))].sort()];
+  const respList = ['', ...getAllResponsibles()];
   rs.innerHTML = respList.map(v => `<option value="${v}">${v || '— select —'}</option>`).join('');
   ['at-phase','at-parent3','at-parent4'].forEach(id => {
     const el = document.getElementById(id);
@@ -1287,6 +1334,147 @@ function badgeClass(s) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// RESPONSIBLE SETTINGS
+// ═══════════════════════════════════════════════════════════════
+const CUSTOM_RESP_KEY = 'wbs_custom_responsibles';
+
+function loadCustomResponsibles() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_RESP_KEY) || '[]'); } catch { return []; }
+}
+
+function getAllResponsibles() {
+  const fromData = [...new Set(displayData.map(r => r.responsible).filter(Boolean))];
+  const custom = loadCustomResponsibles();
+  return [...new Set([...fromData, ...custom])].sort();
+}
+
+function openSettings() {
+  renderSettingsPanel();
+  document.getElementById('settings-modal').style.display = 'flex';
+}
+
+function closeSettings() {
+  document.getElementById('settings-modal').style.display = 'none';
+}
+
+function renderSettingsPanel() {
+  const custom = loadCustomResponsibles();
+  const fromData = [...new Set(displayData.map(r => r.responsible).filter(Boolean))].sort();
+  const all = [...new Set([...fromData, ...custom])].sort();
+  document.getElementById('custom-resp-list').innerHTML = all.map(name => {
+    const isCustom = custom.includes(name);
+    return `<div class="resp-item">
+      <span class="name">${name}</span>
+      ${isCustom
+        ? `<button class="rm-btn" onclick="removeCustomResponsible('${name.replace(/'/g,"\\'")}')">✕</button>`
+        : '<span class="from-data">from data</span>'}
+    </div>`;
+  }).join('') || '<p style="color:#adb5bd;font-size:12px;padding:6px 0">No names yet.</p>';
+}
+
+function addCustomResponsible() {
+  const input = document.getElementById('new-resp-name');
+  const name = input.value.trim();
+  if (!name) return;
+  const custom = loadCustomResponsibles();
+  if (!custom.includes(name)) { custom.push(name); localStorage.setItem(CUSTOM_RESP_KEY, JSON.stringify(custom)); }
+  input.value = '';
+  renderSettingsPanel();
+}
+
+function removeCustomResponsible(name) {
+  const custom = loadCustomResponsibles().filter(n => n !== name);
+  localStorage.setItem(CUSTOM_RESP_KEY, JSON.stringify(custom));
+  renderSettingsPanel();
+}
+// ═══════════════════════════════════════════════════════════════
+
+// ── Date helpers ─────────────────────────────────────────────
+function convertToInputDate(ddmmyyyy) {
+  if (!ddmmyyyy || ddmmyyyy === 'N/A' || ddmmyyyy === '—') return '';
+  const p = ddmmyyyy.split('-');
+  return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : '';
+}
+
+function convertFromInputDate(yyyymmdd) {
+  if (!yyyymmdd) return '';
+  const p = yyyymmdd.split('-');
+  return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : '';
+}
+
+function getEarliestChildDate(row, data) {
+  const children = data.filter(r =>
+    r.sheet === row.sheet && r.level === row.level + 1 &&
+    r.wbs && row.wbs && r.wbs.startsWith(row.wbs + '.')
+  );
+  if (children.length === 0) return row.deadline || '';
+  const childDates = children.map(c => getEarliestChildDate(c, data));
+  const valid = childDates.filter(d => d && d !== '—' && d !== 'N/A');
+  if (!valid.length) return '';
+  // Parse DD-MM-YYYY and find earliest
+  const parsed = valid.map(d => {
+    const p = d.split('-');
+    return p.length === 3 ? new Date(`${p[2]}-${p[1]}-${p[0]}`) : null;
+  }).filter(Boolean);
+  if (!parsed.length) return '';
+  const earliest = new Date(Math.min(...parsed.map(d => d.getTime())));
+  return [String(earliest.getDate()).padStart(2,'0'), String(earliest.getMonth()+1).padStart(2,'0'), earliest.getFullYear()].join('-');
+}
+
+function pickDate(inputId) {
+  const inp = document.getElementById(inputId);
+  if (inp) { inp.style.pointerEvents = 'auto'; try { inp.showPicker(); } catch { inp.click(); } inp.style.pointerEvents = 'none'; }
+}
+
+function onDateChange(input, key) {
+  const row = getRowByKey(key);
+  if (!row) return;
+  const newDate = convertFromInputDate(input.value);
+  row.deadline = newDate;
+  // Update displayed text immediately
+  const cell = document.querySelector(`[data-key="${key}"] .date-cell .date-text`);
+  if (cell) cell.textContent = newDate || '—';
+  // Refresh ancestor date displays
+  refreshParentDates(row);
+  saveDate(row, newDate);
+}
+
+function saveDate(row, newDate) {
+  const key = 'date_' + row._sheetName + '_' + row._rowIdx;
+  clearTimeout(saveTimers[key]);
+  saveTimers[key] = setTimeout(async () => {
+    try {
+      const token = await getToken();
+      const itemId = await getItemId(token);
+      const url = `${workbookSheetBase(itemId, row._sheetName)}/range(address='G${row._rowIdx}')`;
+      const resp = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [[newDate]] })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      showToast('✓ Date saved', 'success');
+      saveToCache(displayData);
+    } catch(e) { showToast('Date save error: ' + e.message, 'error'); }
+  }, 800);
+}
+
+function refreshParentDates(changedRow) {
+  const parts = (changedRow.wbs || '').split('.');
+  for (let depth = parts.length - 1; depth >= 1; depth--) {
+    const ancestorWbs = parts.slice(0, depth).join('.');
+    const ancestor = displayData.find(r => r.sheet === changedRow.sheet && r.wbs === ancestorWbs);
+    if (!ancestor) continue;
+    const aKey = (ancestor._sheetName || ancestor.sheet) + '_' + ancestor._rowIdx;
+    const cell = document.querySelector(`[data-key="${aKey}"] .date-col`);
+    if (!cell) continue;
+    const computed = getEarliestChildDate(ancestor, displayData);
+    cell.innerHTML = computed ? `<span class="date-auto">${computed}</span>` : '';
+  }
+}
+// ─────────────────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════
 // FILTERS
 // ═══════════════════════════════════════════════════════════════
 function populateFilters(data) {
@@ -1299,7 +1487,7 @@ function populateFilters(data) {
   while (respSel.options.length > 1)   respSel.remove(1);
   while (statusSel.options.length > 1) statusSel.remove(1);
 
-  [...new Set(data.map(r=>r.responsible).filter(Boolean))].sort().forEach(v => {
+  getAllResponsibles().forEach(v => {
     const o = new Option(v,v); respSel.appendChild(o);
   });
   [...new Set(data.map(r=>r.status).filter(Boolean))].sort().forEach(v => {
@@ -1431,10 +1619,30 @@ function render() {
     tr.setAttribute('data-key', key);
 
     const indent = `indent-${Math.min(r.level, 5)}`;
-    const dateHtml = r.deadline && r.deadline !== 'N/A' ? r.deadline : (r.deadline === 'N/A' ? '—' : '');
+    const isParentRow = hasChildren(r, displayData);
+    let dateHtml;
+    if (isOnline) {
+      if (isParentRow) {
+        // Parent: show earliest child date (read-only, computed)
+        const computed = getEarliestChildDate(r, displayData);
+        dateHtml = computed ? `<span class="date-auto">${computed}</span>` : '';
+      } else {
+        // Leaf: show date with calendar edit button
+        const displayDate = r.deadline && r.deadline !== 'N/A' ? r.deadline : '';
+        const inputVal = convertToInputDate(displayDate) || new Date().toISOString().split('T')[0];
+        const dpId = 'dp_' + key.replace(/[^a-z0-9]/gi,'_');
+        dateHtml = `<span class="date-cell">
+          <span class="date-text">${displayDate || '—'}</span>
+          <button class="date-cal-btn" onclick="pickDate('${dpId}')" title="Edit date">📅</button>
+          <input type="date" id="${dpId}" class="date-hidden-input" value="${inputVal}" onchange="onDateChange(this,'${key}')">
+        </span>`;
+      }
+    } else {
+      dateHtml = r.deadline && r.deadline !== 'N/A' ? r.deadline : '';
+    }
     let respHtml;
     if (isOnline) {
-      const respOptions = ['', ...[...new Set(displayData.map(d=>d.responsible).filter(Boolean))].sort()]
+      const respOptions = ['', ...getAllResponsibles()]
         .map(v => `<option value="${v}" ${r.responsible===v?'selected':''}>${v}</option>`).join('');
       respHtml = `<select class="resp-input status-select" onchange="onResponsibleChange(this,'${key}')">${respOptions}</select>`;
     } else {
@@ -1442,7 +1650,6 @@ function render() {
     }
 
     let statusHtml, commentHtml;
-    const isParentRow = hasChildren(r, displayData);
     if (isOnline) {
       if (isParentRow) {
         // Parent: show computed status as read-only badge (auto-derived from children)
