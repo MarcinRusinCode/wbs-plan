@@ -1423,7 +1423,24 @@ function getEarliestChildDate(row, data) {
 
 function pickDate(inputId) {
   const inp = document.getElementById(inputId);
-  if (inp) { inp.style.pointerEvents = 'auto'; try { inp.showPicker(); } catch { inp.click(); } inp.style.pointerEvents = 'none'; }
+  if (!inp) return;
+  const dateCell = inp.closest('.date-cell');
+  const textSpan = dateCell && dateCell.querySelector('.date-text');
+  const calBtn   = dateCell && dateCell.querySelector('.date-cal-btn');
+
+  // Show input inline, hide text + calendar button
+  if (textSpan) textSpan.style.display = 'none';
+  if (calBtn)   calBtn.style.display   = 'none';
+  inp.style.cssText = 'position:static;width:110px;height:22px;opacity:1;pointer-events:auto;border:1px solid #4a6fa5;border-radius:4px;font-size:12px;padding:2px 4px;background:#fff;color:#333;';
+  inp.focus();
+  try { inp.showPicker(); } catch {}
+
+  // Clicking outside closes the picker and restores text display
+  inp.onblur = () => {
+    inp.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;';
+    if (textSpan) textSpan.style.display = '';
+    if (calBtn)   calBtn.style.display   = '';
+  };
 }
 
 function onDateChange(input, key) {
@@ -1431,9 +1448,10 @@ function onDateChange(input, key) {
   if (!row) return;
   const newDate = convertFromInputDate(input.value);
   row.deadline = newDate;
-  // Update displayed text immediately
-  const cell = document.querySelector(`[data-key="${key}"] .date-cell .date-text`);
-  if (cell) cell.textContent = newDate || '—';
+  // Update displayed text
+  const textSpan = input.closest && input.closest('.date-cell') && input.closest('.date-cell').querySelector('.date-text');
+  if (textSpan) textSpan.textContent = newDate || '—';
+  input.blur(); // triggers onblur → restores text/button visibility, closes picker
   // Refresh ancestor date displays
   refreshParentDates(row);
   saveDate(row, newDate);
