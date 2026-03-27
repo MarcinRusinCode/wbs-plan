@@ -111,7 +111,21 @@ tr:hover .add-sub-btn { opacity: 1; pointer-events: auto; }
 .date-cal-btn { opacity:0; pointer-events:none; transition:opacity .15s,color .15s; background:none; border:none; padding:0; font-size:13px; cursor:pointer; color:#aab4c0; line-height:1; flex-shrink:0; }
 tr:hover .date-cal-btn { opacity:1; pointer-events:auto; }
 .date-cal-btn:hover { color:#4a6fa5; }
-.date-hidden-input { position:absolute; width:0; height:0; opacity:0; pointer-events:none; border:none; }
+/* Custom calendar popup */
+.cal-popup { position:fixed; background:#fff; border:1px solid #ced4da; border-radius:10px; box-shadow:0 6px 20px rgba(0,0,0,.15); z-index:5000; padding:10px; width:224px; user-select:none; }
+.cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.cal-header span { font-size:13px; font-weight:700; color:#1a1a2e; }
+.cal-nav { background:none; border:none; cursor:pointer; font-size:16px; color:#6c757d; padding:2px 6px; border-radius:4px; line-height:1; }
+.cal-nav:hover { background:#f0f4f8; color:#4a6fa5; }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; }
+.cal-dow { text-align:center; font-size:10px; font-weight:700; color:#9aa5b1; padding:3px 0; }
+.cal-day { text-align:center; font-size:12px; padding:5px 2px; border-radius:5px; cursor:pointer; color:#333; }
+.cal-day:hover { background:#e8f0fe; color:#4a6fa5; }
+.cal-day.today { font-weight:700; color:#4a6fa5; }
+.cal-day.selected { background:#4a6fa5; color:#fff; border-radius:5px; }
+.cal-day.selected:hover { background:#3a5f95; }
+.cal-day.other-month { color:#ced4da; }
+.cal-day.other-month:hover { background:#f8f9fa; color:#adb5bd; }
 .date-auto { font-style:italic; opacity:.7; }
 .date-auto::before { content:'⟳ '; font-style:normal; font-size:9px; }
 
@@ -1421,45 +1435,133 @@ function getEarliestChildDate(row, data) {
   return [String(earliest.getDate()).padStart(2,'0'), String(earliest.getMonth()+1).padStart(2,'0'), earliest.getFullYear()].join('-');
 }
 
-function pickDate(inputId) {
-  const inp = document.getElementById(inputId);
-  if (!inp) return;
-  const dateCell = inp.closest('.date-cell');
-  const textSpan = dateCell && dateCell.querySelector('.date-text');
-  const calBtn   = dateCell && dateCell.querySelector('.date-cal-btn');
+// ── Custom calendar popup ────────────────────────────────────
+let _calState = null; // { key, year, month, el }
 
-  // Show input inline, hide text + calendar button
-  if (textSpan) textSpan.style.display = 'none';
-  if (calBtn)   calBtn.style.display   = 'none';
-  inp.style.cssText = 'position:static;width:110px;height:22px;opacity:1;pointer-events:auto;border:1px solid #4a6fa5;border-radius:4px;font-size:12px;padding:2px 4px;background:#fff;color:#333;';
-  function closeInput() {
-    if (!inp._editOpen) return;
-    inp._editOpen = false;
-    inp.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;';
-    if (textSpan) textSpan.style.display = '';
-    if (calBtn)   calBtn.style.display   = '';
+function openCalendar(event, key) {
+  closeCalendar();
+  const row = getRowByKey(key);
+  const btn = event.currentTarget;
+
+  // Parse current date or use today
+  let year, month, day;
+  const cur = row && row.deadline ? row.deadline : '';
+  if (cur && /^\d{2}-\d{2}-\d{4}$/.test(cur)) {
+    const p = cur.split('-');
+    day = parseInt(p[0]); month = parseInt(p[1]) - 1; year = parseInt(p[2]);
+  } else {
+    const t = new Date(); year = t.getFullYear(); month = t.getMonth(); day = 0;
   }
 
-  inp._editOpen = true;
-  inp.onblur = closeInput;
+  const el = document.createElement('div');
+  el.className = 'cal-popup';
+  document.body.appendChild(el);
 
-  // Wait one frame for browser reflow before opening picker (otherwise picker anchors to old 0×0 position)
-  requestAnimationFrame(() => {
-    inp.focus();
-    try { inp.showPicker(); } catch {}
+  _calState = { key, year, month, selectedDay: day, selectedMonth: month, selectedYear: year, el, btn };
+  renderCalendar();
+  positionCalendar(btn, el);
 
-    // After picker opens, any pointerup on the input (incl. shadow-DOM date cells in Chrome)
-    // means the user made a selection — close even if same date (no 'change' event fires).
-    setTimeout(() => {
-      function onPointerUp() {
-        inp.removeEventListener('pointerup', onPointerUp);
-        // Small delay so 'change' fires first (updates value before we blur)
-        setTimeout(() => closeInput(), 80);
-      }
-      inp.addEventListener('pointerup', onPointerUp);
-    }, 200);
-  });
+  setTimeout(() => document.addEventListener('pointerdown', onCalOutsideClick, true), 0);
 }
+
+function closeCalendar() {
+  if (!_calState) return;
+  document.removeEventListener('pointerdown', onCalOutsideClick, true);
+  if (_calState.el && _calState.el.parentNode) _calState.el.parentNode.removeChild(_calState.el);
+  _calState = null;
+}
+
+function onCalOutsideClick(e) {
+  if (_calState && !_calState.el.contains(e.target) && e.target !== _calState.btn) {
+    closeCalendar();
+  }
+}
+
+function positionCalendar(btn, el) {
+  const r = btn.getBoundingClientRect();
+  let top = r.bottom + 4, left = r.left;
+  const W = window.innerWidth, H = window.innerHeight;
+  if (left + 224 > W - 8) left = W - 232;
+  if (top + 260 > H - 8) top = r.top - 264;
+  el.style.top  = top  + 'px';
+  el.style.left = left + 'px';
+}
+
+function renderCalendar() {
+  if (!_calState) return;
+  const { year, month, selectedDay, selectedMonth, selectedYear, el } = _calState;
+  const DAYS = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const startOffset = (firstDay + 6) % 7; // Mon-based offset
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrev  = new Date(year, month, 0).getDate();
+  const today = new Date();
+
+  let cells = '';
+  // Previous month tail
+  for (let i = startOffset - 1; i >= 0; i--) {
+    cells += `<div class="cal-day other-month">${daysInPrev - i}</div>`;
+  }
+  // Current month
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+    const isSel   = d === selectedDay && month === selectedMonth && year === selectedYear;
+    const cls = ['cal-day', isToday ? 'today' : '', isSel ? 'selected' : ''].filter(Boolean).join(' ');
+    cells += `<div class="${cls}" onclick="selectCalDay(${d})">${d}</div>`;
+  }
+  // Next month fill
+  const total = startOffset + daysInMonth;
+  const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let d = 1; d <= remainder; d++) {
+    cells += `<div class="cal-day other-month">${d}</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calNavMonth(-1)">&#8249;</button>
+      <span>${MONTHS[month]} ${year}</span>
+      <button class="cal-nav" onclick="calNavMonth(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid">
+      ${DAYS.map(d => `<div class="cal-dow">${d}</div>`).join('')}
+      ${cells}
+    </div>`;
+}
+
+function calNavMonth(dir) {
+  if (!_calState) return;
+  _calState.month += dir;
+  if (_calState.month > 11) { _calState.month = 0;  _calState.year++; }
+  if (_calState.month < 0)  { _calState.month = 11; _calState.year--; }
+  renderCalendar();
+}
+
+function selectCalDay(day) {
+  if (!_calState) return;
+  const { year, month, key } = _calState;
+  const dd = String(day).padStart(2,'0');
+  const mm = String(month + 1).padStart(2,'0');
+  const newDate = `${dd}-${mm}-${year}`;
+
+  // Update selected highlight
+  _calState.selectedDay = day;
+  _calState.selectedMonth = month;
+  _calState.selectedYear = year;
+
+  closeCalendar();
+
+  // Update row data and DOM
+  const row = getRowByKey(key);
+  if (!row) return;
+  row.deadline = newDate;
+  const textSpan = document.querySelector(`[data-key="${key}"] .date-cell .date-text`);
+  if (textSpan) textSpan.textContent = newDate;
+  refreshParentDates(row);
+  saveDate(row, newDate);
+}
+// ─────────────────────────────────────────────────────────────
 
 function onDateChange(input, key) {
   const row = getRowByKey(key);
@@ -1665,12 +1767,9 @@ function render() {
       } else {
         // Leaf: show date with calendar edit button
         const displayDate = r.deadline && r.deadline !== 'N/A' ? r.deadline : '';
-        const inputVal = convertToInputDate(displayDate) || new Date().toISOString().split('T')[0];
-        const dpId = 'dp_' + key.replace(/[^a-z0-9]/gi,'_');
         dateHtml = `<span class="date-cell">
           <span class="date-text">${displayDate || '—'}</span>
-          <button class="date-cal-btn" onclick="pickDate('${dpId}')" title="Edit date">📅</button>
-          <input type="date" id="${dpId}" class="date-hidden-input" value="${inputVal}" onchange="onDateChange(this,'${key}')">
+          <button class="date-cal-btn" onclick="openCalendar(event,'${key}')" title="Edit date">📅</button>
         </span>`;
       }
     } else {
