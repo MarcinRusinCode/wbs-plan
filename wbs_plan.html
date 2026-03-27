@@ -206,10 +206,10 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
 #login-card .login-btn:hover { background: #006bc0; }
 #login-card .skip-btn { background: none; border: none; color: #6c757d; font-size: 12px; cursor: pointer; text-decoration: underline; }
 
-/* Add Task Modal */
-#add-task-modal { position: fixed; inset: 0; background: rgba(26,26,46,.8); display: flex; align-items: center; justify-content: center; z-index: 200; }
-#add-task-card { background: #fff; border-radius: 12px; padding: 28px 32px; box-shadow: 0 8px 32px rgba(0,0,0,.2); max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; }
-#add-task-card h2 { font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 18px; }
+/* Add / Edit Task Modals */
+#add-task-modal, #edit-task-modal { position: fixed; inset: 0; background: rgba(26,26,46,.8); display: flex; align-items: center; justify-content: center; z-index: 200; }
+#add-task-card, #edit-task-card { background: #fff; border-radius: 12px; padding: 28px 32px; box-shadow: 0 8px 32px rgba(0,0,0,.2); max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; }
+#add-task-card h2, #edit-task-card h2 { font-size: 17px; font-weight: 700; color: #1a1a2e; margin-bottom: 18px; }
 .at-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
 .at-field { display: flex; flex-direction: column; gap: 4px; }
 .at-field label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #6c757d; }
@@ -287,7 +287,7 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
 
 <!-- Edit Task Modal -->
 <div id="edit-task-modal" style="display:none">
-  <div id="add-task-card">
+  <div id="edit-task-card">
     <h2>&#9998; Edit Task</h2>
     <div class="et-meta">
       <div class="et-meta-chip">WBS: <span id="et-wbs"></span></div>
