@@ -910,7 +910,7 @@ function openEditModal(key) {
   }
 
   // Delete only available for leaf tasks (no children)
-  document.getElementById('et-delete-btn').style.display = isParent ? 'none' : '';
+  document.getElementById('et-delete-btn').style.visibility = isParent ? 'hidden' : 'visible';
 
   document.getElementById('edit-task-modal').style.display = 'flex';
 }
