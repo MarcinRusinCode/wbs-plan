@@ -317,7 +317,7 @@ tr.sheet-header td { background: #2d3561; color: #fff; font-weight: 700; font-si
       </div>
     </div>
     <div class="at-buttons" style="justify-content:space-between">
-      <button class="danger-btn" onclick="deleteTask()">&#128465; Delete</button>
+      <button class="danger-btn" id="et-delete-btn" onclick="deleteTask()">&#128465; Delete</button>
       <div style="display:flex;gap:8px">
         <button onclick="closeEditModal()">Cancel</button>
         <button class="primary" onclick="submitEditTask()">Save</button>
@@ -908,6 +908,9 @@ function openEditModal(key) {
     ].join('');
     statusWrap.innerHTML = `<select id="et-status" style="border:1px solid #ced4da;border-radius:6px;padding:4px 8px;font-size:12px;width:100%">${opts}</select>`;
   }
+
+  // Delete only available for leaf tasks (no children)
+  document.getElementById('et-delete-btn').style.display = isParent ? 'none' : '';
 
   document.getElementById('edit-task-modal').style.display = 'flex';
 }
