@@ -1432,18 +1432,33 @@ function pickDate(inputId) {
   if (textSpan) textSpan.style.display = 'none';
   if (calBtn)   calBtn.style.display   = 'none';
   inp.style.cssText = 'position:static;width:110px;height:22px;opacity:1;pointer-events:auto;border:1px solid #4a6fa5;border-radius:4px;font-size:12px;padding:2px 4px;background:#fff;color:#333;';
+  function closeInput() {
+    if (!inp._editOpen) return;
+    inp._editOpen = false;
+    inp.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;';
+    if (textSpan) textSpan.style.display = '';
+    if (calBtn)   calBtn.style.display   = '';
+  }
+
+  inp._editOpen = true;
+  inp.onblur = closeInput;
+
   // Wait one frame for browser reflow before opening picker (otherwise picker anchors to old 0×0 position)
   requestAnimationFrame(() => {
     inp.focus();
     try { inp.showPicker(); } catch {}
-  });
 
-  // Clicking outside closes the picker and restores text display
-  inp.onblur = () => {
-    inp.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none;border:none;';
-    if (textSpan) textSpan.style.display = '';
-    if (calBtn)   calBtn.style.display   = '';
-  };
+    // After picker opens, any pointerup on the input (incl. shadow-DOM date cells in Chrome)
+    // means the user made a selection — close even if same date (no 'change' event fires).
+    setTimeout(() => {
+      function onPointerUp() {
+        inp.removeEventListener('pointerup', onPointerUp);
+        // Small delay so 'change' fires first (updates value before we blur)
+        setTimeout(() => closeInput(), 80);
+      }
+      inp.addEventListener('pointerup', onPointerUp);
+    }, 200);
+  });
 }
 
 function onDateChange(input, key) {
