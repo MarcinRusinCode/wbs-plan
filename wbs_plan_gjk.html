@@ -1,0 +1,2444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gjenkraft WBS Plan</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   GJK DESIGN SYSTEM — WBS Plan
+   Based on Gjenkraft App Design Guidelines v1.0
+   Primary Blue: #3571A5 | Dark Blue: #1A5F8A | Accent: #0071E3
+═══════════════════════════════════════════════════════════════ */
+:root {
+  --gjk-primary-blue: #3571A5;
+  --gjk-dark-blue: #1A5F8A;
+  --gjk-accent: #0071E3;
+  --gjk-dark-text: #1D1D1F;
+  --gjk-secondary-text: #86868B;
+  --gjk-bg: #F5F5F7;
+  --gjk-card-bg: #FFFFFF;
+  --gjk-border: rgba(0,0,0,0.06);
+  --gjk-border-input: rgba(0,0,0,0.10);
+  --gjk-l1-fill: #C2D9EE;
+  --gjk-l2-fill: #D6E4F0;
+  --gjk-l3-fill: #EAF2F8;
+  --gjk-l4-fill: #F4F9FC;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.04);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
+  --transition-fast: 0.15s cubic-bezier(0.4,0,0.2,1);
+  --transition-med: 0.25s cubic-bezier(0.4,0,0.2,1);
+  --transition-spring: 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
+    'Helvetica Neue', Aptos, Calibri, 'Segoe UI', sans-serif;
+  background: var(--gjk-bg); color: var(--gjk-dark-text);
+  font-size: 13px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Header ── */
+header {
+  background: rgba(26,95,138,0.92);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid rgba(255,255,255,0.12);
+  color: #fff; padding: 0 20px; height: 48px;
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; position: sticky; top: 0; z-index: 20;
+}
+header h1 { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
+#auth-bar { display: flex; align-items: center; gap: 10px; }
+#status-dot { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,0.35); display: inline-block; flex-shrink: 0; }
+#status-dot.online  { background: #30D158; box-shadow: 0 0 6px rgba(48,209,88,0.6); }
+#status-dot.offline { background: #FFD60A; }
+#status-text { font-size: 12px; opacity: .8; }
+#user-name { font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.14); border-radius: 20px; padding: 3px 12px; border: 0.5px solid rgba(255,255,255,0.2); }
+.header-btn {
+  height: 28px; padding: 0 14px; border-radius: 20px;
+  border: 0.5px solid rgba(255,255,255,0.25); background: transparent;
+  color: #fff; font-size: 12px; cursor: pointer; font-weight: 600;
+  font-family: inherit; transition: all var(--transition-fast);
+}
+.header-btn:hover { background: rgba(255,255,255,0.12); transform: translateY(-0.5px); }
+.header-btn:active { transform: scale(0.97); }
+.header-btn.primary {
+  background: rgba(255,255,255,0.18); border-color: rgba(255,255,255,0.35);
+}
+.header-btn.primary:hover { background: rgba(255,255,255,0.26); }
+
+/* ── Filter bar ── */
+#filter-bar {
+  background: rgba(255,255,255,0.82);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 0.5px solid var(--gjk-border);
+  padding: 8px 20px;
+  display: flex; flex-wrap: nowrap; gap: 10px; align-items: flex-end;
+  position: sticky; top: 48px; z-index: 10;
+  box-shadow: var(--shadow-sm); overflow-x: auto;
+}
+.filter-group { display: flex; flex-direction: column; gap: 3px; }
+.filter-group label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--gjk-secondary-text);
+}
+.filter-group select {
+  border: 1px solid var(--gjk-border-input); border-radius: var(--radius-sm);
+  padding: 0 9px; font-size: 12px; background: var(--gjk-card-bg);
+  cursor: pointer; min-width: 130px; color: var(--gjk-dark-text);
+  outline: none; height: 32px; box-sizing: border-box;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+  font-family: inherit;
+}
+.filter-group select:focus {
+  border-color: var(--gjk-accent);
+  box-shadow: 0 0 0 3px rgba(0,113,227,0.12);
+}
+#reset-btn {
+  height: 32px; padding: 0 16px;
+  background: var(--gjk-primary-blue); color: #fff;
+  border: none; border-radius: 20px; cursor: pointer;
+  font-size: 12px; font-weight: 600; align-self: flex-end;
+  box-shadow: 0 1px 4px rgba(53,113,165,0.3);
+  transition: all var(--transition-fast); font-family: inherit;
+}
+#reset-btn:hover { background: var(--gjk-dark-blue); transform: translateY(-0.5px); }
+#reset-btn:active { transform: scale(0.97); }
+
+/* Search box */
+.search-group { display: flex; flex-direction: column; gap: 3px; }
+.search-group label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--gjk-secondary-text);
+}
+#f-search {
+  border: 1px solid var(--gjk-border-input); border-radius: var(--radius-sm);
+  padding: 0 10px; font-size: 12px; width: 180px;
+  color: var(--gjk-dark-text); outline: none; height: 32px;
+  box-sizing: border-box; background: var(--gjk-card-bg); font-family: inherit;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+#f-search:focus { border-color: var(--gjk-accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+#f-search::placeholder { color: #C7C7CC; }
+
+/* Phase multi-select */
+.ms-wrap { position: relative; }
+.ms-toggle {
+  border: 1px solid var(--gjk-border-input); border-radius: var(--radius-sm);
+  padding: 0 28px 0 10px; font-size: 12px; background: var(--gjk-card-bg);
+  cursor: pointer; min-width: 130px; color: var(--gjk-dark-text);
+  outline: none; text-align: left; width: 100%; position: relative;
+  height: 32px; box-sizing: border-box; font-family: inherit;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.ms-toggle::after { content: '▾'; position: absolute; right: 9px; top: 50%; transform: translateY(-50%); font-size: 10px; color: var(--gjk-secondary-text); }
+.ms-toggle.active { border-color: var(--gjk-accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+.ms-dropdown {
+  position: fixed; background: var(--gjk-card-bg);
+  border: 0.5px solid var(--gjk-border); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg); z-index: 9999;
+  min-width: 160px; padding: 6px 0; display: none;
+}
+.ms-dropdown label {
+  display: flex; align-items: center; gap: 8px; padding: 6px 14px;
+  font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0;
+  color: var(--gjk-dark-text); cursor: pointer; white-space: nowrap;
+  transition: background var(--transition-fast);
+}
+.ms-dropdown label:hover { background: rgba(0,113,227,0.06); }
+.ms-dropdown input[type=checkbox] { width: 13px; height: 13px; cursor: pointer; accent-color: var(--gjk-primary-blue); }
+
+/* Settings button */
+#settings-btn {
+  height: 32px; padding: 0 12px;
+  background: var(--gjk-card-bg); color: var(--gjk-secondary-text);
+  border: 1px solid var(--gjk-border-input); border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 16px; align-self: flex-end;
+  box-sizing: border-box; transition: all var(--transition-fast);
+  margin-left: auto;
+}
+#settings-btn:hover { background: rgba(53,113,165,0.08); color: var(--gjk-primary-blue); border-color: var(--gjk-primary-blue); }
+
+/* Settings modal */
+#settings-modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px); z-index:2000; align-items:center; justify-content:center; }
+.settings-card {
+  background: var(--gjk-card-bg); border-radius: var(--radius-lg); padding: 24px;
+  width: 440px; max-width: 95vw; box-shadow: var(--shadow-lg);
+  border: 0.5px solid var(--gjk-border);
+  animation: modalIn var(--transition-spring);
+}
+.settings-card h3 { font-size: 16px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 18px; color: var(--gjk-dark-text); }
+.settings-card h4 { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gjk-secondary-text); margin-bottom: 10px; }
+.resp-item { display:flex; align-items:center; justify-content:space-between; padding:6px 10px; border-radius: var(--radius-sm); margin-bottom:3px; transition: background var(--transition-fast); }
+.resp-item:hover { background: rgba(0,113,227,0.06); }
+.resp-item span.name { font-size:13px; color: var(--gjk-dark-text); }
+.resp-item span.from-data { font-size:10px; color: var(--gjk-secondary-text); font-style:italic; }
+.resp-item button.rm-btn { background:none; border:none; color:#FF3B30; cursor:pointer; font-size:14px; padding:0 4px; line-height:1; transition: opacity var(--transition-fast); }
+.resp-item button.rm-btn:hover { opacity: 0.7; }
+.settings-add-row { display:flex; gap:8px; margin-top:12px; }
+.settings-add-row input {
+  flex:1; border:1px solid var(--gjk-border-input); border-radius: var(--radius-sm);
+  padding: 7px 10px; font-size:12px; outline:none; height: 34px; font-family: inherit;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.settings-add-row input:focus { border-color: var(--gjk-accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+.settings-add-row button {
+  height: 34px; padding: 0 16px; background: var(--gjk-primary-blue); color: #fff;
+  border: none; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 600;
+  font-family: inherit; box-shadow: 0 1px 4px rgba(53,113,165,0.3);
+  transition: all var(--transition-fast);
+}
+.settings-add-row button:hover { background: var(--gjk-dark-blue); transform: translateY(-0.5px); }
+.settings-footer { margin-top: 20px; display: flex; justify-content: flex-end; }
+.settings-footer button {
+  height: 32px; padding: 0 18px;
+  background: var(--gjk-card-bg); color: var(--gjk-dark-text);
+  border: 0.5px solid var(--gjk-border-input); border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 12px; font-weight: 500; font-family: inherit;
+  transition: background var(--transition-fast);
+}
+.settings-footer button:hover { background: var(--gjk-bg); }
+
+#refresh-btn {
+  height: 32px; padding: 0 14px; background: #30D158; color: #fff;
+  border: none; border-radius: 20px; cursor: pointer; font-size: 12px;
+  font-weight: 600; align-self: flex-end; display: none; font-family: inherit;
+  transition: all var(--transition-fast);
+}
+#refresh-btn:hover { background: #25a244; transform: translateY(-0.5px); }
+#results-count { align-self: flex-end; font-size: 11px; color: var(--gjk-secondary-text); padding-bottom: 3px; white-space: nowrap; }
+
+/* ── Table ── */
+#table-wrap { padding: 16px 20px; overflow-x: auto; }
+table {
+  width: 100%; border-collapse: separate; border-spacing: 0;
+  background: var(--gjk-card-bg); border-radius: var(--radius-md);
+  overflow: hidden; box-shadow: var(--shadow-md);
+}
+thead th {
+  background: var(--gjk-primary-blue); color: #fff;
+  padding: 10px 10px; text-align: left;
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.6px; white-space: nowrap;
+  position: sticky; top: 96px;
+}
+thead th:first-child { width: 36px; text-align: center; }
+tbody tr { border-bottom: 0.5px solid rgba(0,0,0,0.04); transition: background var(--transition-fast); }
+tbody tr:hover { background: rgba(0,113,227,0.04) !important; }
+tbody tr.parent-context { }
+td { padding: 7px 10px; vertical-align: middle; }
+td.level-col { text-align: center; font-weight: 700; color: var(--gjk-secondary-text); font-size: 11px; }
+td.wbs-col { font-family: 'SF Mono', Menlo, Consolas, monospace; font-size: 11px; color: var(--gjk-primary-blue); white-space: nowrap; }
+td.task-col { line-height: 1.4; max-width: 340px; }
+td.date-col { white-space: nowrap; font-size: 12px; color: var(--gjk-secondary-text); }
+td.resp-col { white-space: nowrap; font-size: 12px; }
+td.status-col { min-width: 160px; }
+td.comments-col { min-width: 180px; }
+
+/* Indentation */
+.indent-1 { padding-left: 2px; font-weight: 700; font-size: 13px; letter-spacing: -0.2px; }
+.indent-2 { padding-left: 16px; font-weight: 600; }
+.indent-3 { padding-left: 30px; }
+.indent-4 { padding-left: 46px; }
+.indent-5 { padding-left: 62px; color: var(--gjk-secondary-text); font-size: 12px; }
+
+/* Inline add-subtask button */
+.task-cell-wrap { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; }
+.add-sub-btn {
+  flex-shrink: 0; opacity: 0; pointer-events: none;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+  background: none; border: none; padding: 0 2px;
+  font-size: 16px; font-weight: 300; line-height: 1;
+  color: #C7C7CC; cursor: pointer; font-family: inherit;
+}
+tr:hover .add-sub-btn { opacity: 1; pointer-events: auto; }
+.add-sub-btn:hover { color: var(--gjk-primary-blue); }
+
+/* Clickable task name */
+.task-name-link { cursor: pointer; transition: color var(--transition-fast); }
+.task-name-link:hover { color: var(--gjk-primary-blue); }
+
+/* Delete / Danger button */
+.danger-btn {
+  padding: 6px 16px; background: var(--gjk-card-bg); color: #FF3B30;
+  border: 0.5px solid #FF3B30; border-radius: var(--radius-sm);
+  cursor: pointer; font-size: 12px; font-weight: 600; font-family: inherit;
+  transition: all var(--transition-fast);
+}
+.danger-btn:hover { background: #FF3B30; color: #fff; }
+
+/* Edit modal meta chips */
+.et-meta { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.et-meta-chip {
+  background: rgba(53,113,165,0.08); border-radius: 20px;
+  padding: 3px 12px; font-size: 11px; color: var(--gjk-secondary-text);
+  border: 0.5px solid rgba(53,113,165,0.15);
+}
+.et-meta-chip span { font-weight: 700; color: var(--gjk-primary-blue); }
+.et-readonly { color: var(--gjk-secondary-text); font-style: italic; font-size: 12px; padding: 4px 0; }
+
+/* Date editing */
+.date-cell { display: inline-flex; align-items: center; gap: 5px; }
+.date-cal-btn {
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--transition-fast), color var(--transition-fast);
+  background: none; border: none; padding: 0; font-size: 13px;
+  cursor: pointer; color: #C7C7CC; line-height: 1; flex-shrink: 0;
+}
+tr:hover .date-cal-btn { opacity: 1; pointer-events: auto; }
+.date-cal-btn:hover { color: var(--gjk-primary-blue); }
+/* Custom calendar popup */
+.cal-popup {
+  position: fixed; background: var(--gjk-card-bg);
+  border: 0.5px solid var(--gjk-border); border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg); z-index: 5000;
+  padding: 12px; width: 230px; user-select: none;
+  animation: modalIn 0.2s cubic-bezier(0.4,0,0.2,1);
+}
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cal-header span { font-size: 13px; font-weight: 700; letter-spacing: -0.2px; color: var(--gjk-dark-text); }
+.cal-nav {
+  background: none; border: none; cursor: pointer; font-size: 16px;
+  color: var(--gjk-secondary-text); padding: 2px 8px; border-radius: var(--radius-sm);
+  line-height: 1; transition: all var(--transition-fast); font-family: inherit;
+}
+.cal-nav:hover { background: rgba(53,113,165,0.08); color: var(--gjk-primary-blue); }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); gap: 2px; }
+.cal-dow { text-align: center; font-size: 10px; font-weight: 700; color: var(--gjk-secondary-text); padding: 3px 0; }
+.cal-day {
+  text-align: center; font-size: 12px; padding: 5px 2px;
+  border-radius: var(--radius-sm); cursor: pointer; color: var(--gjk-dark-text);
+  transition: all var(--transition-fast);
+}
+.cal-day:hover { background: rgba(0,113,227,0.08); color: var(--gjk-primary-blue); }
+.cal-day.today { font-weight: 700; color: var(--gjk-primary-blue); }
+.cal-day.selected { background: var(--gjk-primary-blue); color: #fff; }
+.cal-day.selected:hover { background: var(--gjk-dark-blue); }
+.cal-day.other-month { color: #C7C7CC; }
+.cal-day.other-month:hover { background: rgba(0,0,0,0.04); color: var(--gjk-secondary-text); }
+.date-auto { font-style: italic; opacity: .7; }
+.date-auto::before { content: '⟳ '; font-style: normal; font-size: 9px; }
+
+/* Row level background colours — GJK fill palette */
+tr.lvl-1 td { background-color: var(--gjk-l2-fill); }
+tr.lvl-2 td { background-color: var(--gjk-l3-fill); }
+tr.lvl-3 td { background-color: var(--gjk-l4-fill); }
+/* lvl-4 and lvl-5 stay white */
+
+/* Sheet section header */
+tr.sheet-header td {
+  background: var(--gjk-dark-blue); color: #fff;
+  font-weight: 700; font-size: 12px; padding: 8px 12px;
+  letter-spacing: 0.2px;
+}
+
+/* Status badges */
+.badge {
+  display: inline-block; padding: 3px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; white-space: nowrap;
+  letter-spacing: 0;
+}
+.badge-done        { background: #D1F2EB; color: #0D7A5F; }
+.badge-progress    { background: #FFF3CD; color: #856404; }
+.badge-notstarted  { background: var(--gjk-bg); color: var(--gjk-secondary-text); }
+.badge-onhold      { background: #FFE5D0; color: #B35C00; }
+.badge-other       { background: var(--gjk-bg); color: var(--gjk-secondary-text); }
+/* Legacy / kept for compatibility */
+.badge-mc          { background: #FFF3CD; color: #856404; }
+.badge-commissioning { background: #D6EAF8; color: #1A5276; }
+.badge-handover    { background: #EDE7F6; color: #512DA8; }
+.badge-operation   { background: #D1F2EB; color: #0D7A5F; }
+.badge-procurement { background: #FFF3CD; color: #856404; }
+
+/* Status auto (parent computed) */
+.status-auto { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-style: italic; opacity: .7; }
+.status-auto::before { content: '⟳'; font-style: normal; font-size: 9px; }
+
+/* Table form controls */
+.status-select {
+  border: 1px solid var(--gjk-border-input); border-radius: var(--radius-sm);
+  padding: 3px 7px; font-size: 11px; background: var(--gjk-card-bg);
+  cursor: pointer; color: var(--gjk-dark-text); outline: none; width: 100%;
+  font-family: inherit;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.status-select:focus { border-color: var(--gjk-accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+.status-select.saving { opacity: .5; }
+.comment-input {
+  border: 1px solid var(--gjk-border-input); border-radius: var(--radius-sm);
+  padding: 3px 8px; font-size: 11px; width: 100%; outline: none;
+  color: var(--gjk-dark-text); font-family: inherit; background: var(--gjk-card-bg);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.comment-input:focus { border-color: var(--gjk-accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+.comment-input.saving { opacity: .5; }
+.resp-input {
+  border: 1px solid var(--gjk-border-input); border-radius: var(--radius-sm);
+  padding: 3px 8px; font-size: 11px; width: 100%; outline: none;
+  color: var(--gjk-dark-text); font-family: inherit; background: var(--gjk-card-bg);
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.resp-input:focus { border-color: var(--gjk-accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+.resp-input.saving { opacity: .5; }
+
+/* Responsible chip (offline view) */
+.chip {
+  display: inline-block; background: rgba(53,113,165,0.08);
+  border-radius: 20px; padding: 2px 10px; font-size: 11px;
+  color: var(--gjk-primary-blue); border: 0.5px solid rgba(53,113,165,0.15);
+}
+
+/* Toast notifications */
+#toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  padding: 10px 18px; border-radius: var(--radius-md); font-size: 13px;
+  font-weight: 600; color: #fff; box-shadow: var(--shadow-lg);
+  backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+  animation: toastIn var(--transition-spring);
+}
+.toast.success { background: rgba(40,167,69,0.92); }
+.toast.error   { background: rgba(255,59,48,0.92); }
+.toast.info    { background: rgba(26,95,138,0.92); }
+@keyframes toastIn { from { opacity:0; transform: translateY(12px) scale(0.95); } to { opacity:1; transform: translateY(0) scale(1); } }
+
+/* Modal entrance animation */
+@keyframes modalIn {
+  from { opacity:0; transform: scale(0.96) translateY(-8px); }
+  to   { opacity:1; transform: scale(1) translateY(0); }
+}
+
+/* Loading */
+#loading { text-align: center; padding: 60px 20px; color: var(--gjk-secondary-text); font-size: 14px; }
+.spinner {
+  display: inline-block; width: 20px; height: 20px;
+  border: 2px solid rgba(53,113,165,0.15); border-top-color: var(--gjk-primary-blue);
+  border-radius: 50%; animation: spin .8s linear infinite;
+  margin-right: 10px; vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+#no-results {
+  text-align: center; padding: 80px 20px; display: none;
+  color: var(--gjk-secondary-text); font-size: 14px;
+}
+#no-results::before { content: '🔍'; display: block; font-size: 36px; margin-bottom: 12px; opacity: .5; }
+
+/* Cache info bar */
+#cache-bar {
+  background: rgba(255,243,205,0.9); border-bottom: 0.5px solid rgba(133,100,4,0.2);
+  padding: 7px 20px; font-size: 11px; color: #856404; display: none;
+}
+
+/* Login overlay */
+#login-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.35); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center; z-index: 100;
+}
+#login-card {
+  background: var(--gjk-card-bg); border-radius: var(--radius-lg);
+  padding: 36px 40px; text-align: center; box-shadow: var(--shadow-lg);
+  max-width: 380px; width: 90%; border: 0.5px solid var(--gjk-border);
+  animation: modalIn var(--transition-spring);
+}
+#login-card h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; color: var(--gjk-dark-text); }
+#login-card p { font-size: 13px; color: var(--gjk-secondary-text); margin-bottom: 28px; line-height: 1.6; }
+#login-card .login-btn {
+  display: block; width: 100%; height: 40px;
+  background: var(--gjk-primary-blue); color: #fff; border: none;
+  border-radius: 20px; font-size: 14px; font-weight: 600; cursor: pointer;
+  margin-bottom: 12px; font-family: inherit;
+  box-shadow: 0 1px 4px rgba(53,113,165,0.3);
+  transition: all var(--transition-fast);
+}
+#login-card .login-btn:hover { background: var(--gjk-dark-blue); transform: translateY(-0.5px); }
+#login-card .skip-btn {
+  background: none; border: none; color: var(--gjk-secondary-text);
+  font-size: 12px; cursor: pointer; font-family: inherit;
+  transition: color var(--transition-fast);
+}
+#login-card .skip-btn:hover { color: var(--gjk-primary-blue); }
+
+/* Add / Edit Task Modals */
+#add-task-modal, #edit-task-modal {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.35); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; z-index: 200;
+}
+#add-task-card, #edit-task-card {
+  background: var(--gjk-card-bg); border-radius: var(--radius-lg);
+  padding: 28px 32px; box-shadow: var(--shadow-lg);
+  max-width: 540px; width: 95%; max-height: 90vh; overflow-y: auto;
+  border: 0.5px solid var(--gjk-border);
+  animation: modalIn var(--transition-spring);
+}
+#add-task-card h2, #edit-task-card h2 {
+  font-size: 18px; font-weight: 700; letter-spacing: -0.4px;
+  color: var(--gjk-dark-text); margin-bottom: 20px;
+}
+.at-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+.at-field { display: flex; flex-direction: column; gap: 5px; }
+.at-field label {
+  font-size: 10px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.5px; color: var(--gjk-secondary-text);
+}
+.at-field input, .at-field select {
+  border: 1px solid var(--gjk-border-input); border-radius: var(--radius-sm);
+  padding: 0 10px; height: 34px; font-size: 12px;
+  color: var(--gjk-dark-text); outline: none; background: var(--gjk-card-bg);
+  font-family: inherit;
+  transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.at-field input:focus, .at-field select:focus {
+  border-color: var(--gjk-accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.12);
+}
+.at-field select:disabled { background: var(--gjk-bg); color: var(--gjk-secondary-text); cursor: not-allowed; }
+.at-full { grid-column: 1 / -1; }
+.at-buttons { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
+.at-buttons button {
+  height: 34px; padding: 0 18px; border-radius: var(--radius-sm);
+  font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+  border: 0.5px solid var(--gjk-border-input);
+  background: var(--gjk-card-bg); color: var(--gjk-dark-text);
+  transition: all var(--transition-fast);
+}
+.at-buttons button:hover { background: var(--gjk-bg); }
+.at-buttons button.primary {
+  background: var(--gjk-primary-blue); color: #fff;
+  border-color: var(--gjk-primary-blue); border-radius: 20px;
+  box-shadow: 0 1px 4px rgba(53,113,165,0.3);
+}
+.at-buttons button.primary:hover { background: var(--gjk-dark-blue); transform: translateY(-0.5px); }
+.at-buttons button.primary:active { transform: scale(0.97); }
+.at-required::after { content: " *"; color: #FF3B30; }
+</style>
+</head>
+<body>
+
+<!-- Login overlay (shown on first load if not authenticated) -->
+<div id="login-overlay" style="display:none">
+  <div id="login-card">
+    <h2>&#128203; Gjenkraft WBS Plan</h2>
+    <p>Sign in with your Gjenkraft account to see live data and edit statuses.</p>
+    <button class="login-btn" onclick="login()">&#128274; Sign in with Microsoft</button>
+    <button class="skip-btn" onclick="skipLogin()">Continue without login (offline mode)</button>
+  </div>
+</div>
+
+<!-- Add Task Modal -->
+<div id="add-task-modal" style="display:none">
+  <div id="add-task-card">
+    <h2>&#10133; Add New Task</h2>
+    <div class="at-grid">
+      <div class="at-field">
+        <label class="at-required">Line</label>
+        <select id="at-line" onchange="atUpdatePhase()"><option value="">— select —</option></select>
+      </div>
+      <div class="at-field">
+        <label class="at-required">Phase</label>
+        <select id="at-phase" onchange="atUpdateParent3()" disabled><option value="">— select line first —</option></select>
+      </div>
+      <div class="at-field at-full">
+        <label class="at-required">Category (Level 3)</label>
+        <select id="at-parent3" onchange="atUpdateParent4()" disabled><option value="">— select phase first —</option></select>
+      </div>
+      <div class="at-field at-full">
+        <label>Parent task (Level 4) — optional, leave empty to add at level 4</label>
+        <select id="at-parent4" disabled><option value="">— none (new task will be level 4) —</option></select>
+      </div>
+      <div class="at-field at-full">
+        <label class="at-required">Task name</label>
+        <input id="at-task" type="text" placeholder="Task description">
+      </div>
+      <div class="at-field">
+        <label>Planned Date</label>
+        <input id="at-date" type="date">
+      </div>
+      <div class="at-field">
+        <label>Responsible</label>
+        <select id="at-responsible"></select>
+      </div>
+      <div class="at-field">
+        <label>Status</label>
+        <select id="at-status"></select>
+      </div>
+      <div class="at-field">
+        <label>Comment</label>
+        <input id="at-comment" type="text" placeholder="Optional comment">
+      </div>
+    </div>
+    <div class="at-buttons">
+      <button onclick="closeAddModal()">Cancel</button>
+      <button class="primary" onclick="submitAddTask()">Add Task</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Task Modal -->
+<div id="edit-task-modal" style="display:none">
+  <div id="edit-task-card">
+    <h2>&#9998; Edit Task</h2>
+    <div class="et-meta">
+      <div class="et-meta-chip">WBS: <span id="et-wbs"></span></div>
+      <div class="et-meta-chip">Line: <span id="et-line"></span></div>
+      <div class="et-meta-chip">Phase: <span id="et-phase"></span></div>
+    </div>
+    <div class="at-grid">
+      <div class="at-field at-full">
+        <label class="at-required">Task name</label>
+        <input id="et-task" type="text" placeholder="Task name">
+      </div>
+      <div class="at-field">
+        <label>Planned Date</label>
+        <div id="et-date-wrap" style="padding:4px 0"></div>
+      </div>
+      <div class="at-field">
+        <label>Responsible</label>
+        <select id="et-responsible"></select>
+      </div>
+      <div class="at-field">
+        <label>Status</label>
+        <div id="et-status-wrap" style="padding:4px 0"></div>
+      </div>
+      <div class="at-field at-full">
+        <label>Comment</label>
+        <input id="et-comment" type="text" placeholder="Optional comment">
+      </div>
+    </div>
+    <div class="at-buttons" style="justify-content:space-between">
+      <button class="danger-btn" id="et-delete-btn" onclick="deleteTask()">&#128465; Delete</button>
+      <div style="display:flex;gap:8px">
+        <button onclick="closeEditModal()">Cancel</button>
+        <button class="primary" onclick="submitEditTask()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<header>
+  <div>
+    <h1>&#128203; Gjenkraft WBS Plan — 2.8kt Composite Recycling Plant</h1>
+  </div>
+  <div id="auth-bar">
+    <span id="status-dot"></span>
+    <span id="status-text">Loading...</span>
+    <span id="user-name" style="display:none"></span>
+    <button id="refresh-btn" class="header-btn" onclick="fetchExcelData()" title="Fetch latest data from SharePoint">&#8635; Refresh</button>
+    <button id="login-btn-header" class="header-btn primary" onclick="login()" style="display:none">Sign in</button>
+    <button id="logout-btn" class="header-btn" onclick="logout()" style="display:none">Sign out</button>
+  </div>
+</header>
+
+<div id="cache-bar">&#9888;&#65039; Offline mode — cached data. Last updated: <span id="cache-time"></span></div>
+
+<div id="filter-bar">
+  <div class="filter-group">
+    <label>Level</label>
+    <select id="f-level" style="min-width:100px">
+      <option value="">All Levels</option>
+      <option value="1">Level 1</option>
+      <option value="2">Level 2</option>
+      <option value="3">Level 3</option>
+      <option value="4">Level 4</option>
+      <option value="5">Level 5</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Phase</label>
+    <div class="ms-wrap" id="phase-ms-wrap">
+      <button class="ms-toggle" id="phase-ms-btn" onclick="togglePhaseDropdown(event)">All Phases</button>
+      <div class="ms-dropdown" id="phase-ms-dropdown">
+        <label><input type="checkbox" value="Installation" onchange="onPhaseCheckChange()"> Installation</label>
+        <label><input type="checkbox" value="Commissioning" onchange="onPhaseCheckChange()"> Commissioning</label>
+        <label><input type="checkbox" value="Handover" onchange="onPhaseCheckChange()"> Handover</label>
+        <label><input type="checkbox" value="Documentation" onchange="onPhaseCheckChange()"> Documentation</label>
+      </div>
+    </div>
+  </div>
+  <div class="filter-group">
+    <label>Line</label>
+    <select id="f-line">
+      <option value="">All Lines</option>
+      <option>1. Cutting Line</option>
+      <option>2. Downsizing Line</option>
+      <option>3. Batch Line</option>
+      <option>4. Continues Line</option>
+      <option>5. Purification Line</option>
+      <option>6. Fiber Cutting Line</option>
+      <option>7. Ventilation</option>
+      <option>8. Electro / Power Supply</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <label>Responsible</label>
+    <select id="f-resp"><option value="">All</option></select>
+  </div>
+  <div class="filter-group">
+    <label>Status</label>
+    <select id="f-status"><option value="">All Statuses</option></select>
+  </div>
+  <div class="search-group">
+    <label>Search</label>
+    <input id="f-search" type="text" placeholder="e.g. electro, pressure test…" oninput="render()">
+  </div>
+  <button id="reset-btn" onclick="resetFilters()">&#8635; Reset</button>
+  <button id="add-task-btn" class="header-btn primary" onclick="openAddModal()" style="align-self:flex-end; height:26px; padding:0 12px; font-size:12px; border-radius:6px; border:none; box-sizing:border-box;">&#10133; Add Task</button>
+  <button id="settings-btn" onclick="openSettings()" title="Settings">⚙</button>
+  <div id="results-count"></div>
+</div>
+
+<div id="loading"><span class="spinner"></span>Loading data...</div>
+<div id="table-wrap" style="display:none">
+  <div id="no-results">No tasks match the selected filters.</div>
+  <table id="wbs-table" style="display:none">
+    <thead>
+      <tr>
+        <th title="WBS Code (col C)">WBS Code</th>
+        <th title="Task / Scope (col D)">Task / Scope</th>
+        <th title="Planned Date (col F)">Planned Date</th>
+        <th title="Responsible (col G)">Responsible</th>
+        <th title="Status (col I)">Status</th>
+        <th title="Comments (col J)">Comments</th>
+      </tr>
+    </thead>
+    <tbody id="wbs-body"></tbody>
+  </table>
+</div>
+<div id="toast-container"></div>
+
+<!-- Settings Modal -->
+<div id="settings-modal">
+  <div class="settings-card">
+    <h3>⚙ Settings</h3>
+    <h4>Responsible — persons list</h4>
+    <div id="custom-resp-list"></div>
+    <div class="settings-add-row">
+      <input id="new-resp-name" type="text" placeholder="Add new name…" onkeydown="if(event.key==='Enter')addCustomResponsible()">
+      <button onclick="addCustomResponsible()">+ Add</button>
+    </div>
+    <div class="settings-footer">
+      <button onclick="closeSettings()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CONFIGURATION — wpisz swoje Client ID i Tenant ID z Azure Portal
+// ═══════════════════════════════════════════════════════════════
+const CONFIG = {
+  clientId: "65c461e2-cb59-4703-8170-3814618806a0",
+  tenantId: "fd7887f1-3dd1-413b-9fac-f1f3c34d7ce7",
+  driveId:  "b!4ukeEgKJUkGwP62RcVIxqzy4aRXDNrtHjY25F82-ggeI5xA4gqNyQqlzNrGriS2d",
+  // filePath: path relative to drive root — update only if file is renamed/moved
+  filePath: "2.8kt CONSTRUCTION/Plan/Gjenkraft_WBS_Plan_19.xlsx",
+  sheets: [
+    "1. Cutting line",
+    "2. Downsizing line",
+    "3. Batch line",
+    "4. Continues line",
+    "5. Purification line",
+    "6. Fiber cutting line",
+    "7. Ventilation",
+    "8. Electro (Power supply)"
+  ],
+  scopes: ["Files.ReadWrite.All", "User.Read"],
+  redirectUri: "https://marcinrusincode.github.io/wbs-plan/wbs_plan.html"
+};
+
+// Path-based URL — used only for file download (content).
+// PATCH/POST (workbook API) requires itemId, so we resolve it once per session.
+function fileDownloadUrl() {
+  const encoded = CONFIG.filePath.split('/').map(encodeURIComponent).join('/');
+  return `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/root:/${encoded}:/content`;
+}
+
+let _resolvedItemId = null;
+async function getItemId(token) {
+  if (_resolvedItemId) return _resolvedItemId;
+  const encoded = CONFIG.filePath.split('/').map(encodeURIComponent).join('/');
+  const url = `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/root:/${encoded}`;
+  const r = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!r.ok) throw new Error(`Cannot resolve file itemId: HTTP ${r.status}`);
+  const data = await r.json();
+  _resolvedItemId = data.id;
+  return _resolvedItemId;
+}
+
+function workbookSheetBase(itemId, sheetName) {
+  return `https://graph.microsoft.com/v1.0/drives/${CONFIG.driveId}/items/${itemId}/workbook/worksheets('${encodeURIComponent(sheetName)}')`;
+}
+
+const STATUS_OPTIONS = [
+  "", "Not started", "In progress", "Done", "On hold", "Void"
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATIC FALLBACK DATA (used when not logged in and no cache)
+// ═══════════════════════════════════════════════════════════════
+const WBS_DATA = [
+  {sheet:"1. Cutting Line",level:1,wbs:"1",task:"Cutting line",phase:"",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:2,wbs:"1.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:2,wbs:"1.2",task:"Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.2.1",task:"Procurement",phase:"Installation",responsible:"Svein Tore",deadline:"20-03-2026",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.2.1",task:"Anti-spill curtain on water jet tank",phase:"Installation",responsible:"Kjartan",deadline:"27-03-2026",status:""},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.2.2",task:"Concrete repair - cable tranch",phase:"Installation",responsible:"Kjartan",deadline:"27-03-2026",status:""},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.2.3",task:"Drain in the floor",phase:"Installation",responsible:"Espen",deadline:"20-03-2026",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.3.1",task:"E-stop connection",phase:"Installation",responsible:"",deadline:"27-03-2026",status:""},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.3.2",task:"Waterjet nozle cabling/connections",phase:"Installation",responsible:"",deadline:"27-03-2026",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.4.1",task:"Reprogram the robot — ABB Robot",phase:"Installation",responsible:"",deadline:"27-03-2026",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"06-02-2026",status:"Done"},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"Tyo",deadline:"27-03-2026",status:""},
+  {sheet:"1. Cutting Line",level:4,wbs:"1.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"1. Cutting Line",level:2,wbs:"1.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"27-03-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.3.2",task:"Hot Commissioning — No Material",phase:"Commissioning",responsible:"",deadline:"27-03-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.3.3",task:"Hot Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"1. Cutting Line",level:2,wbs:"1.4",task:"Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"1. Cutting Line",level:3,wbs:"1.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"2. Downsizing Line",level:1,wbs:"2",task:"Downsizing line",phase:"",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:2,wbs:"2.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:2,wbs:"2.2",task:"Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.2.1",task:"Procurement",phase:"Installation",responsible:"Svein Tore",deadline:"20-03-2026",status:"Ready for handover"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.1",task:"Bolt Alligator Shear to floor",phase:"Installation",responsible:"Kjartan",deadline:"20-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.2",task:"Install spill plates on fences (plexi or similar)",phase:"Installation",responsible:"Kjartan",deadline:"20-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.3",task:"Mechanical stopper for material",phase:"Installation",responsible:"Kjartan",deadline:"20-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.4",task:"Operator panel/stand",phase:"Installation",responsible:"Svein Tore",deadline:"20-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.5",task:"Fencing of hazardous areas",phase:"Installation",responsible:"Svein Tore",deadline:"20-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.6",task:"Weld guide for material",phase:"Installation",responsible:"Kjartan",deadline:"27-03-2026",status:""},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.2.7",task:"Seal openings arround tray and belt",phase:"Installation",responsible:"",deadline:"20-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.1",task:"New breaker — Alligator Shear",phase:"Installation",responsible:"",deadline:"20-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.2",task:"Install connection box — Alligator Shear",phase:"Installation",responsible:"",deadline:"20-03-2026",status:"Done"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.3",task:"Cable ladders",phase:"Installation",responsible:"Kjartan",deadline:"27-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.4",task:"Replace cables to control buttons",phase:"Installation",responsible:"Kjartan",deadline:"27-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.5",task:"Connect belt motor",phase:"Installation",responsible:"Svein Tore",deadline:"27-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.3.6",task:"Emergency system verification",phase:"Installation",responsible:"",deadline:"27-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.4.1",task:"Fix/Testing clamping — Alligator Shear",phase:"Installation",responsible:"Kjartan",deadline:"27-03-2026",status:"In progress"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"03-04-2026",status:""},
+  {sheet:"2. Downsizing Line",level:4,wbs:"2.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"2. Downsizing Line",level:2,wbs:"2.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"17-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.3.2",task:"Hot Commissioning — No Material",phase:"Commissioning",responsible:"",deadline:"10-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.3.3",task:"Hot Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"10-04-2026",status:"Ready for commissioning"},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"2. Downsizing Line",level:2,wbs:"2.4",task:"Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"2. Downsizing Line",level:3,wbs:"2.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"3. Batch Line",level:1,wbs:"3",task:"Batch line",phase:"",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:2,wbs:"3.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:2,wbs:"3.2",task:"Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.2.1",task:"Procurement",phase:"Installation",responsible:"Marcin Rusin",deadline:"20-03-2026",status:"Not started"},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.1.1",task:"Small burning chamber for batch",phase:"Installation",responsible:"Marcin Rusin",deadline:"20-03-2026",status:"Not started"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"",deadline:"",status:"Not started"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.3.1",task:"Complience check",phase:"Installation",responsible:"Edgar",deadline:"27-03-2026",status:""},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.3.2",task:"Termtech presence on site during commissioning",phase:"Installation",responsible:"Marcin",deadline:"27-03-2026",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"24-04-2026",status:""},
+  {sheet:"3. Batch Line",level:4,wbs:"3.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"3. Batch Line",level:2,wbs:"3.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"30-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.3.2",task:"Hot Commissioning — No Material",phase:"Commissioning",responsible:"",deadline:"30-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.3.3",task:"Hot Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"30-04-2026",status:"Ready for commissioning"},
+  {sheet:"3. Batch Line",level:3,wbs:"3.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"3. Batch Line",level:2,wbs:"3.4",task:"Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"3. Batch Line",level:3,wbs:"3.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"4. Continues Line",level:1,wbs:"4",task:"Continues line",phase:"",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:2,wbs:"4.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:2,wbs:"4.2",task:"Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.2.1",task:"Procurement",phase:"Installation",responsible:"Marcin Rusin",deadline:"20-03-2026",status:"Mechanical Completion"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.1.1",task:"Secure Supplier on site for Commissioning",phase:"Installation",responsible:"Marcin Rusin",deadline:"20-03-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.1.2",task:"Air compressor — share with Evensen and Fiber Cutter",phase:"Installation",responsible:"Kevin",deadline:"20-03-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"",deadline:"17-04-2026",status:""},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.1",task:"Oil & lubrication",phase:"Installation",responsible:"Nils",deadline:"17-04-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.2",task:"Covers and protection",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.3",task:"Tightness testing",phase:"Installation",responsible:"Nils",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.4",task:"NDT testing — gas line",phase:"Installation",responsible:"Piotr",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.5",task:"Install water pipes insulation — cold water only",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.6",task:"Gasket/sealings — obtain list from Kevin",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.2.7",task:"Epoxy paint in oil trays",phase:"Installation",responsible:"Marcin",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"17-04-2026",status:""},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.3.1",task:"Install additional gas detection sensors (6 pcs)",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.3.2",task:"Power up heating coils on gas separator",phase:"Installation",responsible:"Marcin",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.3.3",task:"Gas burner air supply",phase:"Installation",responsible:"Kjartan",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.3.4",task:"N2 generator",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"17-04-2026",status:""},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.4.1",task:"Emergency stop connection",phase:"Installation",responsible:"Jan Henning",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"Simen",deadline:"24-04-2026",status:""},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"Kjartan",deadline:"24-04-2026",status:"In progress"},
+  {sheet:"4. Continues Line",level:4,wbs:"4.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"4. Continues Line",level:2,wbs:"4.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.3.2",task:"Hot Commissioning — No Material",phase:"Commissioning",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.3.3",task:"Hot Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.3.4",task:"Performance & Stability Test",phase:"Commissioning",responsible:"",deadline:"01-06-2026",status:"Ready for commissioning"},
+  {sheet:"4. Continues Line",level:3,wbs:"4.3.5",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"4. Continues Line",level:2,wbs:"4.4",task:"Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"01-06-2026",status:""},
+  {sheet:"4. Continues Line",level:3,wbs:"4.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"5. Purification Line",level:1,wbs:"5",task:"Purification line",phase:"",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:2,wbs:"5.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:2,wbs:"5.2",task:"Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.2.1",task:"Procurement",phase:"Installation",responsible:"Svein Tore",deadline:"01-04-2026",status:"Not started"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"Marcin",deadline:"",status:"Done"},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.2.1",task:"Prefabrication and installation of hoods — inlet and outlet",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.2.2",task:"Pneumatic system connection — Evensen Furnace",phase:"Installation",responsible:"",deadline:"10-04-2026",status:""},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.2.3",task:"Loading/outlonging roller conveyors",phase:"Installation",responsible:"",deadline:"10-04-2026",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.4.1",task:"Service man visit — Evensen Furnace setup",phase:"Installation",responsible:"",deadline:"10-04-2026",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"01-05-2026",status:""},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"24-04-2026",status:""},
+  {sheet:"5. Purification Line",level:4,wbs:"5.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"5. Purification Line",level:2,wbs:"5.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.3.2",task:"Hot Commissioning — No Material",phase:"Commissioning",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.3.3",task:"Hot Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:"Ready for commissioning"},
+  {sheet:"5. Purification Line",level:3,wbs:"5.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"5. Purification Line",level:2,wbs:"5.4",task:"Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"5. Purification Line",level:3,wbs:"5.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"6. Fiber Cutting Line",level:1,wbs:"6",task:"Fiber cutting line",phase:"",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:2,wbs:"6.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:2,wbs:"6.2",task:"Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.2.1",task:"Procurement",phase:"Installation",responsible:"",deadline:"01-04-2026",status:"Mechanical Completion"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"",deadline:"01-04-2026",status:""},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.2.1",task:"Remove existing CE marking (old — pre-modification)",phase:"Installation",responsible:"",deadline:"01-04-2026",status:"Done"},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.2.2",task:"Screw/lock side covers",phase:"Installation",responsible:"",deadline:"01-04-2026",status:"In progress"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"01-04-2026",status:""},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.3.1",task:"Yellow background ring on Emergency Stop button",phase:"Installation",responsible:"Edgar",deadline:"01-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.3.2",task:"Lock electrical cabinet",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"In progress"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.4.1",task:"Compliance check",phase:"Installation",responsible:"",deadline:"10-04-2026",status:"In progress"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"10-04-2026",status:""},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"10-04-2026",status:""},
+  {sheet:"6. Fiber Cutting Line",level:4,wbs:"6.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"6. Fiber Cutting Line",level:2,wbs:"6.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"17-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.3.2",task:"Dry Run — No Material",phase:"Commissioning",responsible:"",deadline:"17-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.3.3",task:"Commissioning — With Material",phase:"Commissioning",responsible:"",deadline:"17-04-2026",status:"Ready for commissioning"},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"16-04-2026",status:""},
+  {sheet:"6. Fiber Cutting Line",level:2,wbs:"6.4",task:"Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"6. Fiber Cutting Line",level:3,wbs:"6.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"7. Ventilation",level:1,wbs:"7",task:"Ventilation",phase:"",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:2,wbs:"7.1",task:"Line documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.1",task:"Process & Functional Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.2",task:"Mechanical & System Design",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.3",task:"Electrical & Control Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.4",task:"Safety Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.5",task:"Compliance Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.6",task:"Operational Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.1.7",task:"Testing & Commissioning Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:2,wbs:"7.2",task:"Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.2.1",task:"Procurement",phase:"Installation",responsible:"Marcin Rusin",deadline:"24-04-2026",status:"In progress"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"Marcin Rusin",deadline:"17-04-2026",status:""},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.1",task:"Foundation slab",phase:"Installation",responsible:"Marcin Rusin",deadline:"27-03-2026",status:"Done"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.2",task:"Installation of filter and container",phase:"Installation",responsible:"Marcin Rusin",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.3",task:"Installation of ventilation ducts — outside",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.4",task:"Evensen",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.5",task:"Batch",phase:"Installation",responsible:"Marcin Rusin",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.6",task:"Connection for alligator - optional",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.7",task:"Continues line",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.8",task:"Installation of shut off valves",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.2.9",task:"Installation of extract fan",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"24-04-2026",status:""},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.3.1",task:"Power connection between filter and cabinet",phase:"Installation",responsible:"Simen",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"01-05-2026",status:""},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"24-04-2026",status:""},
+  {sheet:"7. Ventilation",level:4,wbs:"7.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"7. Ventilation",level:2,wbs:"7.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.3.1",task:"Cold Commissioning",phase:"Commissioning",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.3.2",task:"Hot Commissioning",phase:"Commissioning",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.3.4",task:"Performance Test",phase:"Commissioning",responsible:"",deadline:"01-05-2026",status:"Ready for commissioning"},
+  {sheet:"7. Ventilation",level:3,wbs:"7.3.6",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"7. Ventilation",level:2,wbs:"7.4",task:"Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"7. Ventilation",level:3,wbs:"7.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:1,wbs:"8",task:"Electro (Power supply)",phase:"",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:2,wbs:"8.1",task:"Documentation",phase:"Documentation",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.1.1",task:"Design Documentation — Norconsult",phase:"Documentation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.1.2",task:"Switchboard Documentation — Gjenkraft as Modifier",phase:"Documentation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.1.3",task:"Electrical Installer Documentation",phase:"Documentation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.1.4",task:"Transformer T8",phase:"Documentation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:2,wbs:"8.2",task:"Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.2.1",task:"Procurement",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.2.2",task:"Mechanical Installation",phase:"Installation",responsible:"",deadline:"24-04-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.2.1",task:"T8 transformer room - if needed",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.2.3",task:"Electrical Installation",phase:"Installation",responsible:"",deadline:"17-04-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.3.1",task:"Heating coils on gas separator - contines",phase:"Installation",responsible:"",deadline:"17-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.3.2",task:"N2 Generator & Remaining Connections",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Not started"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.2.4",task:"Control & Automation Installation",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.2.5",task:"Mechanical Completion",phase:"Installation",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.5.1",task:"Mechanical Completion Check",phase:"Installation",responsible:"",deadline:"04-05-2026",status:"Mechanical Completion"},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.5.2",task:"Punch A clearance",phase:"Installation",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:4,wbs:"8.2.5.3",task:"Punch B clearance",phase:"Installation",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:2,wbs:"8.3",task:"Commissioning",phase:"Commissioning",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.3.1",task:"Electrical Inspection & Test (NEK 400-6)",phase:"Commissioning",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.3.2",task:"Energisation & Power Distribution Check",phase:"Commissioning",responsible:"",deadline:"24-04-2026",status:"Ready for commissioning"},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.3.4",task:"Commissioning Dossier",phase:"Commissioning",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:2,wbs:"8.4",task:"Handover",phase:"Handover",responsible:"",deadline:"",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.4.1",task:"Documentation Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.4.2",task:"Training",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.4.3",task:"Spare Parts & Tools Handover",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+  {sheet:"8. Electro / Power Supply",level:3,wbs:"8.4.4",task:"Final Inspection & SAT Sign-off",phase:"Handover",responsible:"",deadline:"04-05-2026",status:""},
+];
+
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+let msalInstance = null;
+let currentAccount = null;
+let isOnline = false;
+let displayData = []; // currently displayed data
+let saveTimers = {};  // debounce timers per rowKey
+
+// ═══════════════════════════════════════════════════════════════
+// MSAL SETUP
+// ═══════════════════════════════════════════════════════════════
+function dbg(msg) {
+  document.getElementById('loading').innerHTML = '<span class="spinner"></span>' + msg;
+}
+
+async function initMsal() {
+  dbg('A: initMsal start');
+  if (!CONFIG.clientId || CONFIG.clientId === "REPLACE_WITH_AZURE_CLIENT_ID") {
+    showConfigWarning();
+    useStaticData();
+    return;
+  }
+  try {
+    dbg('B: creating PublicClientApplication...');
+    msalInstance = new msal.PublicClientApplication({
+      auth: {
+        clientId: CONFIG.clientId,
+        authority: `https://login.microsoftonline.com/${CONFIG.tenantId}`,
+        redirectUri: CONFIG.redirectUri
+      },
+      cache: { cacheLocation: "sessionStorage" }
+    });
+    dbg('C: initialize()...');
+    await msalInstance.initialize();
+    dbg('D: handleRedirectPromise()...');
+    const resp = await msalInstance.handleRedirectPromise();
+    if (resp && resp.account) currentAccount = resp.account;
+    dbg('E: tryAutoLogin()...');
+    await tryAutoLogin();
+  } catch(e) {
+    document.getElementById('loading').innerHTML = 'MSAL ERROR: ' + e.message;
+    console.warn("MSAL init error:", e);
+    document.getElementById('login-overlay').style.display = 'none';
+    useStaticData();
+  }
+}
+
+async function tryAutoLogin() {
+  const accounts = msalInstance.getAllAccounts();
+  if (accounts.length > 0) {
+    currentAccount = accounts[0];
+    await fetchExcelData();
+  } else {
+    // No account — show cached or static data immediately, login button stays in header
+    const cached = loadFromCache();
+    if (cached) useData(cached.data, false, cached.time);
+    else useStaticData();
+  }
+}
+
+async function login() {
+  if (!msalInstance) { showToast("MSAL nie jest zainicjalizowany", "error"); return; }
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('loading').style.display = 'block';
+  try {
+    // Use redirect flow — more reliable on SharePoint (no popup blockers)
+    await msalInstance.loginRedirect({ scopes: CONFIG.scopes });
+    // Page will redirect to Microsoft login and come back — handled by handleRedirectPromise
+  } catch(e) {
+    console.warn("Login error:", e);
+    showToast("Login error: " + e.message, "error");
+    const cached = loadFromCache();
+    if (cached) useData(cached.data, false, cached.time);
+    else useStaticData();
+  }
+}
+
+function logout() {
+  if (!msalInstance) return;
+  msalInstance.logoutRedirect({ account: currentAccount });
+}
+
+function skipLogin() {
+  document.getElementById('login-overlay').style.display = 'none';
+  const cached = loadFromCache();
+  if (cached) useData(cached.data, false, cached.time);
+  else useStaticData();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDIT TASK MODAL
+// ═══════════════════════════════════════════════════════════════
+let _editKey = null;
+
+function openEditModal(key) {
+  if (!isOnline) { showToast('Sign in to edit tasks', 'error'); return; }
+  _editKey = key;
+  const row = getRowByKey(key);
+  if (!row) return;
+  const isParent = hasChildren(row, displayData);
+
+  document.getElementById('et-wbs').textContent   = row.wbs   || '—';
+  document.getElementById('et-line').textContent  = row.sheet || '—';
+  document.getElementById('et-phase').textContent = row.phase || '—';
+  document.getElementById('et-task').value    = row.task    || '';
+  document.getElementById('et-comment').value = row.comment || '';
+
+  // Responsible dropdown
+  const rs = document.getElementById('et-responsible');
+  rs.innerHTML = ['', ...getAllResponsibles()]
+    .map(v => `<option value="${v}" ${row.responsible===v?'selected':''}>${v||'— none —'}</option>`).join('');
+
+  // Date — editable for leaf, computed read-only for parent
+  const dateWrap = document.getElementById('et-date-wrap');
+  if (isParent) {
+    const d = getEarliestChildDate(row, displayData);
+    dateWrap.innerHTML = `<span class="et-readonly">&#8635; ${d||'—'} &nbsp;(computed from children)</span>`;
+  } else {
+    const val = convertToInputDate(row.deadline) || '';
+    dateWrap.innerHTML = `<input id="et-date" type="text" style="border:1px solid #ced4da;border-radius:6px;padding:4px 8px;font-size:12px;width:100%" value="${row.deadline||''}" placeholder="DD-MM-YYYY">`;
+  }
+
+  // Status — editable for leaf, computed read-only for parent
+  const statusWrap = document.getElementById('et-status-wrap');
+  if (isParent) {
+    const s = getEffectiveStatus(row, displayData);
+    statusWrap.innerHTML = s
+      ? `<span class="badge ${badgeClass(s)} status-auto">${s}</span>`
+      : `<span class="et-readonly">— computed from children —</span>`;
+  } else {
+    const isLegacy = row.status && !STATUS_OPTIONS.includes(row.status);
+    const opts = [
+      ...(isLegacy ? [`<option value="${row.status}" selected disabled>${row.status}</option>`] : []),
+      ...STATUS_OPTIONS.map(o => `<option value="${o}" ${(!isLegacy && row.status===o)?'selected':''}>${o||'— none —'}</option>`)
+    ].join('');
+    statusWrap.innerHTML = `<select id="et-status" style="border:1px solid #ced4da;border-radius:6px;padding:4px 8px;font-size:12px;width:100%">${opts}</select>`;
+  }
+
+  // Delete only available for leaf tasks (no children)
+  document.getElementById('et-delete-btn').style.visibility = isParent ? 'hidden' : 'visible';
+
+  document.getElementById('edit-task-modal').style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('edit-task-modal').style.display = 'none';
+  _editKey = null;
+}
+
+async function submitEditTask() {
+  const row = getRowByKey(_editKey);
+  if (!row) return;
+  const isParent = hasChildren(row, displayData);
+
+  const newTask    = document.getElementById('et-task').value.trim();
+  const newResp    = document.getElementById('et-responsible').value;
+  const newComment = document.getElementById('et-comment').value.trim();
+  const newDate    = isParent ? (row.deadline||'') : (document.getElementById('et-date')?.value.trim()||'');
+  const newStatus  = isParent ? '' : (document.getElementById('et-status')?.value||'');
+
+  if (!newTask) { showToast('Task name is required', 'error'); return; }
+
+  // Update in-memory
+  row.task = newTask; row.responsible = newResp; row.comment = newComment;
+  if (!isParent) { row.deadline = newDate; row.status = newStatus; }
+
+  closeEditModal();
+  render();
+
+  showToast('Saving…', 'info');
+  try {
+    const token  = await getToken();
+    const itemId = await getItemId(token);
+    const base   = workbookSheetBase(itemId, row._sheetName);
+    // Excel columns: A=Lvl, B=WBS, C=Task, D='', E='', F=Responsible, G=Deadline, H='', I=Status, J=Comment
+    const values = [[row.level, row.wbs, newTask, '', '', newResp, newDate, '', newStatus, newComment]];
+    const wr = await fetch(`${base}/range(address='A${row._rowIdx}:J${row._rowIdx}')`, {
+      method: 'PATCH',
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ values })
+    });
+    if (!wr.ok) throw new Error(`HTTP ${wr.status}`);
+    showToast('✓ Saved', 'success');
+    saveToCache(displayData);
+  } catch(e) { showToast('Save error: ' + e.message, 'error'); }
+}
+
+async function deleteTask() {
+  const row = getRowByKey(_editKey);
+  if (!row) return;
+  const isParent = hasChildren(row, displayData);
+
+  const confirmMsg = isParent
+    ? `Delete "${row.task}" AND all its subtasks? This cannot be undone.`
+    : `Delete "${row.task}"? This cannot be undone.`;
+  if (!confirm(confirmMsg)) return;
+
+  // Collect rows to delete: this row + all descendants (WBS starts with row.wbs + '.')
+  const toDelete = [row, ...displayData.filter(r =>
+    r.sheet === row.sheet && r.wbs && row.wbs && r.wbs !== row.wbs && r.wbs.startsWith(row.wbs + '.')
+  )].sort((a, b) => b._rowIdx - a._rowIdx); // delete bottom-to-top to avoid index shift
+
+  closeEditModal();
+  showToast(`Deleting ${toDelete.length} row(s)…`, 'info');
+
+  try {
+    const token  = await getToken();
+    const itemId = await getItemId(token);
+    const base   = workbookSheetBase(itemId, row._sheetName);
+    for (const r of toDelete) {
+      const del = await fetch(`${base}/range(address='${r._rowIdx}:${r._rowIdx}')/delete`,
+        { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shift: 'Up' }) });
+      if (!del.ok) { const t = await del.text(); throw new Error(`Delete ${del.status}: ${t}`); }
+    }
+    showToast('✓ Deleted', 'success');
+    await new Promise(r => setTimeout(r, 1500));
+    await fetchExcelData();
+  } catch(e) { showToast('Delete error: ' + e.message, 'error'); }
+}
+// ═══════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════
+// ADD TASK MODAL
+// ═══════════════════════════════════════════════════════════════
+function openAddModal() {
+  if (!isOnline) { showToast('Sign in to add tasks', 'error'); return; }
+  const ls = document.getElementById('at-line');
+  ls.innerHTML = '<option value="">— select —</option>';
+  [...new Set(displayData.map(r => r.sheet))].forEach(s => {
+    ls.innerHTML += `<option value="${s}">${s}</option>`;
+  });
+  const ss = document.getElementById('at-status');
+  ss.innerHTML = STATUS_OPTIONS.map(o => `<option value="${o}">${o || '— select —'}</option>`).join('');
+  const rs = document.getElementById('at-responsible');
+  const respList = ['', ...getAllResponsibles()];
+  rs.innerHTML = respList.map(v => `<option value="${v}">${v || '— select —'}</option>`).join('');
+  ['at-phase','at-parent3','at-parent4'].forEach(id => {
+    const el = document.getElementById(id);
+    el.innerHTML = '<option value="">—</option>';
+    el.disabled = true;
+  });
+  document.getElementById('at-task').value = '';
+  document.getElementById('at-date').value = '';
+  document.getElementById('at-comment').value = '';
+  document.getElementById('add-task-modal').style.display = 'flex';
+}
+
+function closeAddModal() {
+  document.getElementById('add-task-modal').style.display = 'none';
+}
+
+// Open modal pre-filled based on the clicked row's context
+function openAddModalForRow(key) {
+  const row = getRowByKey(key);
+  if (!row) { openAddModal(); return; }
+
+  openAddModal(); // reset & populate Line select
+
+  const wbsParts = (row.wbs || '').split('.');
+
+  // Pre-fill Line
+  const lineEl = document.getElementById('at-line');
+  lineEl.value = row.sheet;
+  atUpdatePhase(); // populates Phase dropdown
+
+  // Pre-fill Phase
+  if (row.phase) {
+    const phaseEl = document.getElementById('at-phase');
+    phaseEl.value = row.phase;
+    atUpdateParent3(); // populates Category (level 3) dropdown
+  }
+
+  // Pre-fill Category (level 3 ancestor or self)
+  const p3Wbs = row.level === 3 ? row.wbs
+              : row.level >  3 ? wbsParts.slice(0, 3).join('.')
+              : null;
+  if (p3Wbs) {
+    const p3El = document.getElementById('at-parent3');
+    p3El.value = p3Wbs;
+    atUpdateParent4(); // populates Parent task (level 4) dropdown
+  }
+
+  // Pre-fill Parent task (level 4 ancestor or self) → new task will be level 5
+  const p4Wbs = row.level === 4 ? row.wbs
+              : row.level >= 5  ? wbsParts.slice(0, 4).join('.')
+              : null;
+  if (p4Wbs) {
+    const p4El = document.getElementById('at-parent4');
+    p4El.value = p4Wbs;
+  }
+}
+
+function atUpdatePhase() {
+  const line = document.getElementById('at-line').value;
+  const ps = document.getElementById('at-phase');
+  if (!line) { ps.innerHTML = '<option value="">— select line first —</option>'; ps.disabled = true; return; }
+  const phases = [...new Set(displayData.filter(r => r.sheet === line && r.phase).map(r => r.phase))];
+  ps.innerHTML = '<option value="">— select —</option>' + phases.map(p => `<option value="${p}">${p}</option>`).join('');
+  ps.disabled = false;
+  document.getElementById('at-parent3').innerHTML = '<option value="">—</option>'; document.getElementById('at-parent3').disabled = true;
+  document.getElementById('at-parent4').innerHTML = '<option value="">—</option>'; document.getElementById('at-parent4').disabled = true;
+}
+
+function atUpdateParent3() {
+  const line = document.getElementById('at-line').value;
+  const phase = document.getElementById('at-phase').value;
+  const p3 = document.getElementById('at-parent3');
+  if (!phase) { p3.innerHTML = '<option value="">— select phase first —</option>'; p3.disabled = true; return; }
+  const tasks = displayData.filter(r => r.sheet === line && r.phase === phase && r.level === 3);
+  p3.innerHTML = '<option value="">— select —</option>' + tasks.map(r => `<option value="${r.wbs}">${r.wbs} — ${r.task}</option>`).join('');
+  p3.disabled = false;
+  document.getElementById('at-parent4').innerHTML = '<option value="">— none (add at level 4) —</option>'; document.getElementById('at-parent4').disabled = true;
+}
+
+function atUpdateParent4() {
+  const line = document.getElementById('at-line').value;
+  const p3wbs = document.getElementById('at-parent3').value;
+  const p4 = document.getElementById('at-parent4');
+  if (!p3wbs) { p4.innerHTML = '<option value="">—</option>'; p4.disabled = true; return; }
+  const tasks = displayData.filter(r => r.sheet === line && r.level === 4 && r.wbs.startsWith(p3wbs + '.'));
+  p4.innerHTML = '<option value="">— none (add at level 4) —</option>' + tasks.map(r => `<option value="${r.wbs}">${r.wbs} — ${r.task}</option>`).join('');
+  p4.disabled = tasks.length === 0;
+}
+
+function calcNewWbs(parentWbs, sheet) {
+  const parentLevel = parentWbs.split('.').length;
+  const children = displayData.filter(r => r.sheet === sheet && r.level === parentLevel + 1 && r.wbs.startsWith(parentWbs + '.'));
+  if (!children.length) return parentWbs + '.1';
+  const max = Math.max(...children.map(r => parseInt(r.wbs.split('.').pop()) || 0));
+  return parentWbs + '.' + (max + 1);
+}
+
+function findInsertAfter(parentWbs, sheet) {
+  // Last _rowIdx in the parent's entire subtree
+  const subtree = displayData.filter(r => r.sheet === sheet && (r.wbs === parentWbs || r.wbs.startsWith(parentWbs + '.')));
+  return subtree.length ? Math.max(...subtree.map(r => r._rowIdx)) : null;
+}
+
+async function submitAddTask() {
+  const line      = document.getElementById('at-line').value;
+  const phase     = document.getElementById('at-phase').value;
+  const p3        = document.getElementById('at-parent3').value;
+  const p4        = document.getElementById('at-parent4').value;
+  const taskName  = document.getElementById('at-task').value.trim();
+  const dateRaw   = document.getElementById('at-date').value;
+  const resp      = document.getElementById('at-responsible').value.trim();
+  const status    = document.getElementById('at-status').value;
+  const comment   = document.getElementById('at-comment').value.trim();
+
+  if (!line || !phase || !p3 || !taskName) {
+    showToast('Line, Phase, Category and Task name are required', 'error'); return;
+  }
+  const parentWbs = p4 || p3;
+  const newWbs    = calcNewWbs(parentWbs, line);
+  const newLevel  = newWbs.split('.').length;
+  const insertAfter = findInsertAfter(parentWbs, line);
+  if (!insertAfter) { showToast('Cannot determine insertion position', 'error'); return; }
+
+  let dateStr = '';
+  if (dateRaw) { const [y,m,d] = dateRaw.split('-'); dateStr = `${d}-${m}-${y}`; }
+
+  // Map display name back to CONFIG sheet name
+  const sheetName = CONFIG.sheets.find(s => normalizeSheetName(s) === line) || line;
+  const insertRow = insertAfter + 1;
+
+  showToast('Adding task...', 'info');
+  try {
+    const token = await getToken();
+    const itemId = await getItemId(token);
+    const base = `${workbookSheetBase(itemId, sheetName)}`;
+    const headers = { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' };
+
+    // Step 1: insert a full blank row using row-number notation (e.g. "15:15")
+    // Using A:J notation returns 500 from Graph API; full-row "N:N" is reliable
+    const ins = await fetchWithTimeout(`${base}/range(address='${insertRow}:${insertRow}')/insert`,
+      { method: 'POST', headers, body: JSON.stringify({ shift: 'Down' }) }, 15000);
+    if (!ins.ok) { const t = await ins.text(); throw new Error(`Insert ${ins.status}: ${t}`); }
+
+    // Step 2: write data
+    // Excel columns: A=Lvl, B=WBS Code, C=Task/Scope, D=Description, E=Deliverables,
+    //                F=Responsible, G=Deadline, H=Decision Gate, I=Status, J=Comment
+    const values = [[newLevel, newWbs, taskName, '', '', resp, dateStr, '', status, comment]];
+    const wr = await fetchWithTimeout(`${base}/range(address='A${insertRow}:J${insertRow}')`,
+      { method: 'PATCH', headers, body: JSON.stringify({ values }) }, 15000);
+    if (!wr.ok) { const t = await wr.text(); throw new Error(`Write ${wr.status}: ${t}`); }
+
+    closeAddModal();
+    showToast(`Task "${newWbs} — ${taskName}" added! Refreshing data…`, 'success');
+    // Wait 2s for Excel/Graph API to commit the changes before re-fetching
+    await new Promise(r => setTimeout(r, 2000));
+    await fetchExcelData(); // refresh live data
+  } catch(e) {
+    showToast('Error: ' + e.message, 'error');
+    console.error('Add task error:', e);
+  }
+}
+
+async function getToken() {
+  const req = { scopes: CONFIG.scopes, account: currentAccount };
+  try {
+    const resp = await msalInstance.acquireTokenSilent(req);
+    return resp.accessToken;
+  } catch(silentErr) {
+    console.warn("Silent token failed:", silentErr.message);
+    // Popup may be blocked on SharePoint — use redirect instead
+    await msalInstance.acquireTokenRedirect(req);
+    throw new Error("Przekierowanie do logowania..."); // never reached
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GRAPH API — READ
+// ═══════════════════════════════════════════════════════════════
+// Fetch with timeout helper
+function fetchWithTimeout(url, options, ms = 12000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ms);
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(timer));
+}
+
+function parseSheetRows(sheetName, values) {
+  const displayName = normalizeSheetName(sheetName);
+
+  // Find header row containing "WBS Level" or "WBS Code"
+  let headerIdx = 0;
+  for (let i = 0; i < Math.min(values.length, 10); i++) {
+    const row = values[i].map(c => String(c||'').toLowerCase());
+    if (row.some(c => c.includes('wbs') && (c.includes('level') || c.includes('code')))) {
+      headerIdx = i; break;
+    }
+  }
+
+  const rows = [];
+  for (let i = headerIdx + 1; i < values.length; i++) {
+    const row = values[i];
+    // Excel columns: A(0)=Level, B(1)=WBS Code, C(2)=Task Name,
+    //   D(3)=Description, E(4)=Deliverables, F(5)=Responsible,
+    //   G(6)=Deadline, H(7)=Decision Gate, I(8)=Status, J(9)=Link
+    const level   = parseInt(row[0]) || 0;
+    const wbsCode = String(row[1] || '').trim();   // col B — WBS Code
+    const task    = String(row[2] || '').trim();   // col C — Task/Scope
+    if (!level || !task) continue;
+    if (task.toLowerCase().includes('wbs element') || task.toLowerCase().includes('wbs level')) continue;
+    const responsible = String(row[5] || '').trim();  // col F — Responsible
+    const deadline    = formatDate(row[6]);             // col G — Deadline
+    rows.push({
+      sheet:       displayName,
+      level:       level,
+      wbs:         wbsCode,
+      task:        task,
+      phase:       getPhase(wbsCode),
+      deadline:    deadline,
+      responsible: responsible,
+      status:      String(row[8] || '').trim(),   // col I — Status
+      comment:     String(row[9] || '').trim(),   // col J — Link to File
+      _sheetName:  sheetName,
+      _rowIdx:     i + 1   // 1-based Excel row number
+    });
+  }
+  return rows;
+}
+
+// Load SheetJS on demand (not at page load) so MSAL can initialize quickly
+function loadSheetJs() {
+  if (window.XLSX) return Promise.resolve();
+  return new Promise((resolve, reject) => {
+    function tryLoad(src, fallbackSrc) {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = fallbackSrc
+        ? () => tryLoad(fallbackSrc, null)
+        : () => reject(new Error('Failed to load SheetJS library'));
+      document.head.appendChild(s);
+    }
+    // Tier 1: self-hosted on SharePoint, Tier 2: jsdelivr CDN
+    tryLoad('./xlsx.full.min.js', 'https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js');
+  });
+}
+
+async function fetchExcelData() {
+  const loadEl = document.getElementById('loading');
+  loadEl.innerHTML = '<span class="spinner"></span>Connecting to SharePoint...';
+  loadEl.style.display = 'block';
+  document.getElementById('table-wrap').style.display = 'none';
+
+  // Overall 60-second timeout — fall back to cache on expiry
+  const fallbackTimer = setTimeout(() => {
+    console.warn("fetchExcelData: overall timeout");
+    showToast("Loading timed out — using cached data", "error");
+    const cached = loadFromCache();
+    if (cached) useData(cached.data, false, cached.time);
+    else useStaticData();
+  }, 60000);
+
+  try {
+    loadEl.innerHTML = '<span class="spinner"></span>Pobieranie tokenu...';
+    const token = await getToken();
+
+    loadEl.innerHTML = '<span class="spinner"></span>Loading parser library...';
+    await loadSheetJs();
+
+    // Download the raw XLSX binary — one request instead of 8 workbook API calls.
+    // The workbook API opens Excel Online on every call (30-60 sec); file download is ~3 sec.
+    loadEl.innerHTML = '<span class="spinner"></span>Pobieranie pliku Excel z SharePoint...';
+    const fileUrl = fileDownloadUrl();
+    const resp = await fetchWithTimeout(fileUrl, { headers: { Authorization: `Bearer ${token}` } }, 45000);
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      throw new Error(`HTTP ${resp.status} — ${errText.slice(0,120) || 'check API permissions'}`);
+    }
+
+    loadEl.innerHTML = '<span class="spinner"></span>Parsowanie danych...';
+    const arrayBuffer = await resp.arrayBuffer();
+    const workbook = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array', cellDates: false });
+
+    const rows = [];
+    for (const sheetName of CONFIG.sheets) {
+      const ws = workbook.Sheets[sheetName];
+      if (!ws) { console.warn(`Sheet "${sheetName}" not found in workbook`); continue; }
+      const values = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      rows.push(...parseSheetRows(sheetName, values));
+    }
+
+    clearTimeout(fallbackTimer);
+    if (rows.length === 0) throw new Error("No data — check sheet names and API permissions");
+
+    saveToCache(rows);
+    useData(rows, true);
+    showToast(`✓ Pobrano ${rows.length} zadań z SharePoint`, "success");
+  } catch(e) {
+    clearTimeout(fallbackTimer);
+    console.error("fetchExcelData error:", e);
+    showToast("Error: " + e.message, "error");
+    const cached = loadFromCache();
+    if (cached) useData(cached.data, false, cached.time);
+    else useStaticData();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GRAPH API — WRITE
+// ═══════════════════════════════════════════════════════════════
+async function saveCell(row, newStatus, newComment) {
+  const key = row._sheetName + '_' + row._rowIdx;
+  // Update display data immediately
+  const item = displayData.find(r => r._sheetName === row._sheetName && r._rowIdx === row._rowIdx);
+  if (item) { item.status = newStatus; item.comment = newComment; }
+
+  // Debounce: wait 800ms before actually saving
+  clearTimeout(saveTimers[key]);
+  saveTimers[key] = setTimeout(async () => {
+    const statusEl  = document.querySelector(`[data-key="${key}"] .status-select`);
+    const commentEl = document.querySelector(`[data-key="${key}"] .comment-input`);
+    if (statusEl)  statusEl.classList.add('saving');
+    if (commentEl) commentEl.classList.add('saving');
+    try {
+      const token = await getToken();
+      const itemId = await getItemId(token);
+      // Excel row address: row[8]=I, row[9]=J → address I{row}:J{row}
+      const addr = `I${row._rowIdx}:J${row._rowIdx}`;
+      const url = `${workbookSheetBase(itemId, row._sheetName)}/range(address='${addr}')`;
+      const resp = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [[newStatus, newComment]] })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      showToast("&#10003; Zapisano", "success");
+      // Update cache
+      saveToCache(displayData);
+    } catch(e) {
+      showToast("Save error: " + e.message, "error");
+    } finally {
+      if (statusEl)  statusEl.classList.remove('saving');
+      if (commentEl) commentEl.classList.remove('saving');
+    }
+  }, 800);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA HELPERS
+// ═══════════════════════════════════════════════════════════════
+function normalizeSheetName(name) {
+  const map = {
+    "1. Cutting line":           "1. Cutting Line",
+    "2. Downsizing line":        "2. Downsizing Line",
+    "3. Batch line":             "3. Batch Line",
+    "4. Continues line":         "4. Continues Line",
+    "5. Purification line":      "5. Purification Line",
+    "6. Fiber cutting line":     "6. Fiber Cutting Line",
+    "7. Ventilation":            "7. Ventilation",
+    "8. Electro (Power supply)": "8. Electro / Power Supply"
+  };
+  return map[name] || name;
+}
+
+function getPhase(wbs) {
+  const parts = String(wbs).split('.');
+  if (parts.length >= 2) {
+    if (parts[1] === '1') return 'Documentation';
+    if (parts[1] === '2') return 'Installation';
+    if (parts[1] === '3') return 'Commissioning';
+    if (parts[1] === '4') return 'Handover';
+  }
+  return '';
+}
+
+function formatDate(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  if (s === '' || s === '0') return '';
+  // Excel serial date → JS date
+  const num = parseFloat(s);
+  if (!isNaN(num) && num > 40000) {
+    const d = new Date(Math.round((num - 25569) * 86400000));
+    const dd = String(d.getUTCDate()).padStart(2,'0');
+    const mm = String(d.getUTCMonth()+1).padStart(2,'0');
+    const yy = d.getUTCFullYear();
+    return `${dd}-${mm}-${yy}`;
+  }
+  return s;
+}
+
+function useStaticData() {
+  const data = WBS_DATA.map((r,i) => ({...r, comment:'', _sheetName: r.sheet, _rowIdx: i+2}));
+  useData(data, false);
+}
+
+function useData(data, online, cacheTime) {
+  displayData = data;
+  isOnline = online;
+  populateFilters(data);
+  render();
+  updateAuthUI(online, cacheTime);
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('table-wrap').style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CACHE (localStorage)
+// ═══════════════════════════════════════════════════════════════
+function saveToCache(data) {
+  try {
+    localStorage.setItem('wbs_cache', JSON.stringify({ time: new Date().toISOString(), data }));
+  } catch(e) { console.warn('Cache save failed:', e); }
+}
+
+function loadFromCache() {
+  try {
+    const raw = localStorage.getItem('wbs_cache');
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UI HELPERS
+// ═══════════════════════════════════════════════════════════════
+function updateAuthUI(online, cacheTime) {
+  const dot = document.getElementById('status-dot');
+  const txt = document.getElementById('status-text');
+  const userName = document.getElementById('user-name');
+  const loginBtn = document.getElementById('login-btn-header');
+  const logoutBtn = document.getElementById('logout-btn');
+  const refreshBtn = document.getElementById('refresh-btn');
+  const cacheBar = document.getElementById('cache-bar');
+
+  dot.className = online ? 'online' : 'offline';
+  if (online && currentAccount) {
+    txt.textContent = 'Online';
+    userName.textContent = currentAccount.name || currentAccount.username;
+    userName.style.display = 'inline';
+    loginBtn.style.display = 'none';
+    logoutBtn.style.display = 'inline';
+    refreshBtn.style.display = 'inline';
+    cacheBar.style.display = 'none';
+    const addBtnOnline = document.getElementById('add-task-btn');
+    if (addBtnOnline) { addBtnOnline.disabled = false; addBtnOnline.style.opacity = '1'; }
+  } else {
+    txt.textContent = 'Offline';
+    userName.style.display = 'none';
+    loginBtn.style.display = 'inline';
+    logoutBtn.style.display = 'none';
+    refreshBtn.style.display = 'none';
+    const addBtn = document.getElementById('add-task-btn');
+    if (addBtn) { addBtn.disabled = !online; addBtn.style.opacity = online ? '1' : '0.4'; }
+    if (cacheTime) {
+      const dt = new Date(cacheTime);
+      document.getElementById('cache-time').textContent =
+        dt.toLocaleDateString('pl-PL') + ' ' + dt.toLocaleTimeString('pl-PL', {hour:'2-digit',minute:'2-digit'});
+      cacheBar.style.display = 'block';
+    }
+  }
+}
+
+function showConfigWarning() {
+  showToast("Static mode — open via SharePoint URL to sign in", "info");
+}
+
+function showToast(msg, type='info') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ── Computed parent status ──────────────────────────────────────
+// Returns the effective status for a row:
+//  - Leaf rows → their own status
+//  - Parent rows → derived from children recursively:
+//    • all empty          → ""
+//    • all same           → that status
+//    • one child          → child's status
+//    • mixed              → "In progress"
+function getEffectiveStatus(row, data) {
+  const children = data.filter(r =>
+    r.sheet === row.sheet &&
+    r.level === row.level + 1 &&
+    r.wbs && row.wbs && r.wbs.startsWith(row.wbs + '.')
+  );
+  if (children.length === 0) return row.status || '';
+
+  const childStatuses = children.map(c => getEffectiveStatus(c, data));
+  const nonEmpty = childStatuses.filter(s => s !== '');
+  if (nonEmpty.length === 0) return '';
+  const unique = [...new Set(nonEmpty)];
+  // One child, or all children same status (and none empty)
+  if (unique.length === 1 && nonEmpty.length === childStatuses.length) return unique[0];
+  // All children done/terminal but mixed types
+  const TERMINAL = ['Done','Void','On hold','Mechanical Completion','Ready for commissioning','Ready for handover','Ready for operation'];
+  if (nonEmpty.length === childStatuses.length && nonEmpty.every(s => TERMINAL.includes(s))) return 'Done';
+  return 'In progress';
+}
+
+function hasChildren(row, data) {
+  return data.some(r =>
+    r.sheet === row.sheet &&
+    r.level === row.level + 1 &&
+    r.wbs && row.wbs && r.wbs.startsWith(row.wbs + '.')
+  );
+}
+// ───────────────────────────────────────────────────────────────
+
+function badgeClass(s) {
+  const sl = (s||'').toLowerCase();
+  if (sl.includes('done'))             return 'badge-done';
+  if (sl.includes('in progress'))      return 'badge-progress';
+  if (sl.includes('not started'))      return 'badge-notstarted';
+  if (sl.includes('mechanical compl')) return 'badge-mc';
+  if (sl.includes('commissioning'))    return 'badge-commissioning';
+  if (sl.includes('handover'))         return 'badge-handover';
+  if (sl.includes('operation'))        return 'badge-operation';
+  if (sl.includes('procurement'))      return 'badge-procurement';
+  if (sl.includes('on hold'))          return 'badge-onhold';
+  if (sl.includes('void'))             return 'badge-other';
+  return 'badge-other';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RESPONSIBLE SETTINGS
+// ═══════════════════════════════════════════════════════════════
+const CUSTOM_RESP_KEY = 'wbs_custom_responsibles';
+
+function loadCustomResponsibles() {
+  try { return JSON.parse(localStorage.getItem(CUSTOM_RESP_KEY) || '[]'); } catch { return []; }
+}
+
+function getAllResponsibles() {
+  const fromData = [...new Set(displayData.map(r => r.responsible).filter(Boolean))];
+  const custom = loadCustomResponsibles();
+  return [...new Set([...fromData, ...custom])].sort();
+}
+
+function openSettings() {
+  renderSettingsPanel();
+  document.getElementById('settings-modal').style.display = 'flex';
+}
+
+function closeSettings() {
+  document.getElementById('settings-modal').style.display = 'none';
+}
+
+function renderSettingsPanel() {
+  const custom = loadCustomResponsibles();
+  const fromData = [...new Set(displayData.map(r => r.responsible).filter(Boolean))].sort();
+  const all = [...new Set([...fromData, ...custom])].sort();
+  document.getElementById('custom-resp-list').innerHTML = all.map(name => {
+    const isCustom = custom.includes(name);
+    return `<div class="resp-item">
+      <span class="name">${name}</span>
+      ${isCustom
+        ? `<button class="rm-btn" onclick="removeCustomResponsible('${name.replace(/'/g,"\\'")}')">✕</button>`
+        : '<span class="from-data">from data</span>'}
+    </div>`;
+  }).join('') || '<p style="color:#adb5bd;font-size:12px;padding:6px 0">No names yet.</p>';
+}
+
+function addCustomResponsible() {
+  const input = document.getElementById('new-resp-name');
+  const name = input.value.trim();
+  if (!name) return;
+  const custom = loadCustomResponsibles();
+  if (!custom.includes(name)) { custom.push(name); localStorage.setItem(CUSTOM_RESP_KEY, JSON.stringify(custom)); }
+  input.value = '';
+  renderSettingsPanel();
+}
+
+function removeCustomResponsible(name) {
+  const custom = loadCustomResponsibles().filter(n => n !== name);
+  localStorage.setItem(CUSTOM_RESP_KEY, JSON.stringify(custom));
+  renderSettingsPanel();
+}
+// ═══════════════════════════════════════════════════════════════
+
+// ── Date helpers ─────────────────────────────────────────────
+function convertToInputDate(ddmmyyyy) {
+  if (!ddmmyyyy || ddmmyyyy === 'N/A' || ddmmyyyy === '—') return '';
+  const p = ddmmyyyy.split('-');
+  return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : '';
+}
+
+function convertFromInputDate(yyyymmdd) {
+  if (!yyyymmdd) return '';
+  const p = yyyymmdd.split('-');
+  return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : '';
+}
+
+function getEarliestChildDate(row, data) {
+  const children = data.filter(r =>
+    r.sheet === row.sheet && r.level === row.level + 1 &&
+    r.wbs && row.wbs && r.wbs.startsWith(row.wbs + '.')
+  );
+  if (children.length === 0) return row.deadline || '';
+  const childDates = children.map(c => getEarliestChildDate(c, data));
+  const valid = childDates.filter(d => d && d !== '—' && d !== 'N/A');
+  if (!valid.length) return '';
+  // Parse DD-MM-YYYY and find earliest
+  const parsed = valid.map(d => {
+    const p = d.split('-');
+    return p.length === 3 ? new Date(`${p[2]}-${p[1]}-${p[0]}`) : null;
+  }).filter(Boolean);
+  if (!parsed.length) return '';
+  const earliest = new Date(Math.min(...parsed.map(d => d.getTime())));
+  return [String(earliest.getDate()).padStart(2,'0'), String(earliest.getMonth()+1).padStart(2,'0'), earliest.getFullYear()].join('-');
+}
+
+// ── Custom calendar popup ────────────────────────────────────
+let _calState = null; // { key, year, month, el }
+
+function openCalendar(event, key) {
+  closeCalendar();
+  const row = getRowByKey(key);
+  const btn = event.currentTarget;
+
+  // Parse current date or use today
+  let year, month, day;
+  const cur = row && row.deadline ? row.deadline : '';
+  if (cur && /^\d{2}-\d{2}-\d{4}$/.test(cur)) {
+    const p = cur.split('-');
+    day = parseInt(p[0]); month = parseInt(p[1]) - 1; year = parseInt(p[2]);
+  } else {
+    const t = new Date(); year = t.getFullYear(); month = t.getMonth(); day = 0;
+  }
+
+  const el = document.createElement('div');
+  el.className = 'cal-popup';
+  document.body.appendChild(el);
+
+  _calState = { key, year, month, selectedDay: day, selectedMonth: month, selectedYear: year, el, btn };
+  renderCalendar();
+  positionCalendar(btn, el);
+
+  setTimeout(() => document.addEventListener('pointerdown', onCalOutsideClick, true), 0);
+}
+
+function closeCalendar() {
+  if (!_calState) return;
+  document.removeEventListener('pointerdown', onCalOutsideClick, true);
+  if (_calState.el && _calState.el.parentNode) _calState.el.parentNode.removeChild(_calState.el);
+  _calState = null;
+}
+
+function onCalOutsideClick(e) {
+  if (_calState && !_calState.el.contains(e.target) && e.target !== _calState.btn) {
+    closeCalendar();
+  }
+}
+
+function positionCalendar(btn, el) {
+  const r = btn.getBoundingClientRect();
+  let top = r.bottom + 4, left = r.left;
+  const W = window.innerWidth, H = window.innerHeight;
+  if (left + 224 > W - 8) left = W - 232;
+  if (top + 260 > H - 8) top = r.top - 264;
+  el.style.top  = top  + 'px';
+  el.style.left = left + 'px';
+}
+
+function renderCalendar() {
+  if (!_calState) return;
+  const { year, month, selectedDay, selectedMonth, selectedYear, el } = _calState;
+  const DAYS = ['Mo','Tu','We','Th','Fr','Sa','Su'];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+  const startOffset = (firstDay + 6) % 7; // Mon-based offset
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const daysInPrev  = new Date(year, month, 0).getDate();
+  const today = new Date();
+
+  let cells = '';
+  // Previous month tail
+  for (let i = startOffset - 1; i >= 0; i--) {
+    cells += `<div class="cal-day other-month">${daysInPrev - i}</div>`;
+  }
+  // Current month
+  for (let d = 1; d <= daysInMonth; d++) {
+    const isToday = d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+    const isSel   = d === selectedDay && month === selectedMonth && year === selectedYear;
+    const cls = ['cal-day', isToday ? 'today' : '', isSel ? 'selected' : ''].filter(Boolean).join(' ');
+    cells += `<div class="${cls}" onclick="selectCalDay(${d})">${d}</div>`;
+  }
+  // Next month fill
+  const total = startOffset + daysInMonth;
+  const remainder = total % 7 === 0 ? 0 : 7 - (total % 7);
+  for (let d = 1; d <= remainder; d++) {
+    cells += `<div class="cal-day other-month">${d}</div>`;
+  }
+
+  el.innerHTML = `
+    <div class="cal-header">
+      <button class="cal-nav" onclick="calNavMonth(-1)">&#8249;</button>
+      <span>${MONTHS[month]} ${year}</span>
+      <button class="cal-nav" onclick="calNavMonth(1)">&#8250;</button>
+    </div>
+    <div class="cal-grid">
+      ${DAYS.map(d => `<div class="cal-dow">${d}</div>`).join('')}
+      ${cells}
+    </div>`;
+}
+
+function calNavMonth(dir) {
+  if (!_calState) return;
+  _calState.month += dir;
+  if (_calState.month > 11) { _calState.month = 0;  _calState.year++; }
+  if (_calState.month < 0)  { _calState.month = 11; _calState.year--; }
+  renderCalendar();
+}
+
+function selectCalDay(day) {
+  if (!_calState) return;
+  const { year, month, key } = _calState;
+  const dd = String(day).padStart(2,'0');
+  const mm = String(month + 1).padStart(2,'0');
+  const newDate = `${dd}-${mm}-${year}`;
+
+  // Update selected highlight
+  _calState.selectedDay = day;
+  _calState.selectedMonth = month;
+  _calState.selectedYear = year;
+
+  closeCalendar();
+
+  // Update row data and DOM
+  const row = getRowByKey(key);
+  if (!row) return;
+  row.deadline = newDate;
+  const textSpan = document.querySelector(`[data-key="${key}"] .date-cell .date-text`);
+  if (textSpan) textSpan.textContent = newDate;
+  refreshParentDates(row);
+  saveDate(row, newDate);
+}
+// ─────────────────────────────────────────────────────────────
+
+function onDateChange(input, key) {
+  const row = getRowByKey(key);
+  if (!row) return;
+  const newDate = convertFromInputDate(input.value);
+  row.deadline = newDate;
+  // Update displayed text
+  const textSpan = input.closest && input.closest('.date-cell') && input.closest('.date-cell').querySelector('.date-text');
+  if (textSpan) textSpan.textContent = newDate || '—';
+  input.blur(); // triggers onblur → restores text/button visibility, closes picker
+  // Refresh ancestor date displays
+  refreshParentDates(row);
+  saveDate(row, newDate);
+}
+
+function saveDate(row, newDate) {
+  const key = 'date_' + row._sheetName + '_' + row._rowIdx;
+  clearTimeout(saveTimers[key]);
+  saveTimers[key] = setTimeout(async () => {
+    try {
+      const token = await getToken();
+      const itemId = await getItemId(token);
+      const url = `${workbookSheetBase(itemId, row._sheetName)}/range(address='G${row._rowIdx}')`;
+      const resp = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [[newDate]] })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      showToast('✓ Date saved', 'success');
+      saveToCache(displayData);
+    } catch(e) { showToast('Date save error: ' + e.message, 'error'); }
+  }, 800);
+}
+
+function refreshParentDates(changedRow) {
+  const parts = (changedRow.wbs || '').split('.');
+  for (let depth = parts.length - 1; depth >= 1; depth--) {
+    const ancestorWbs = parts.slice(0, depth).join('.');
+    const ancestor = displayData.find(r => r.sheet === changedRow.sheet && r.wbs === ancestorWbs);
+    if (!ancestor) continue;
+    const aKey = (ancestor._sheetName || ancestor.sheet) + '_' + ancestor._rowIdx;
+    const cell = document.querySelector(`[data-key="${aKey}"] .date-col`);
+    if (!cell) continue;
+    const computed = getEarliestChildDate(ancestor, displayData);
+    cell.innerHTML = computed ? `<span class="date-auto">${computed}</span>` : '';
+  }
+}
+// ─────────────────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════
+function populateFilters(data) {
+  const respSel   = document.getElementById('f-resp');
+  const statusSel = document.getElementById('f-status');
+  const prevResp   = respSel.value;
+  const prevStatus = statusSel.value;
+
+  // Rebuild but keep selection
+  while (respSel.options.length > 1)   respSel.remove(1);
+  while (statusSel.options.length > 1) statusSel.remove(1);
+
+  getAllResponsibles().forEach(v => {
+    const o = new Option(v,v); respSel.appendChild(o);
+  });
+  [...new Set(data.map(r=>r.status).filter(Boolean))].sort().forEach(v => {
+    const o = new Option(v,v); statusSel.appendChild(o);
+  });
+
+  respSel.value   = prevResp;
+  statusSel.value = prevStatus;
+}
+
+// ── Phase multi-select helpers ──────────────────────────────────
+function getSelectedPhases() {
+  return [...document.querySelectorAll('#phase-ms-dropdown input[type=checkbox]:checked')]
+    .map(cb => cb.value);
+}
+
+function updatePhaseLabel() {
+  const sel = getSelectedPhases();
+  const btn = document.getElementById('phase-ms-btn');
+  if (!btn) return;
+  if (sel.length === 0) { btn.textContent = 'All Phases'; btn.classList.remove('active'); }
+  else if (sel.length === 1) { btn.textContent = sel[0]; btn.classList.add('active'); }
+  else { btn.textContent = sel.length + ' phases'; btn.classList.add('active'); }
+}
+
+function onPhaseCheckChange() {
+  updatePhaseLabel();
+  render();
+}
+
+function togglePhaseDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('phase-ms-dropdown');
+  const btn = document.getElementById('phase-ms-btn');
+  const open = dd.style.display === 'block';
+  if (open) { dd.style.display = 'none'; return; }
+  const rect = btn.getBoundingClientRect();
+  dd.style.top  = (rect.bottom + 3) + 'px';
+  dd.style.left = rect.left + 'px';
+  dd.style.display = 'block';
+}
+
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('phase-ms-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    const dd = document.getElementById('phase-ms-dropdown');
+    if (dd) dd.style.display = 'none';
+  }
+});
+// ───────────────────────────────────────────────────────────────
+
+function resetFilters() {
+  ['f-line','f-level','f-resp','f-status'].forEach(id => document.getElementById(id).value = '');
+  document.querySelectorAll('#phase-ms-dropdown input[type=checkbox]').forEach(cb => cb.checked = false);
+  updatePhaseLabel();
+  document.getElementById('f-search').value = '';
+  render();
+}
+
+['f-line','f-level','f-resp','f-status'].forEach(id =>
+  document.getElementById(id)?.addEventListener('change', render)
+);
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+function render() {
+  const fLine   = document.getElementById('f-line').value;
+  const fPhases = getSelectedPhases();
+  const fResp   = document.getElementById('f-resp').value;
+  const fStatus = document.getElementById('f-status').value;
+  const fLevel  = parseInt(document.getElementById('f-level').value) || 0;
+  // Search: split into words, all must match (any order, case-insensitive)
+  const fSearchRaw = (document.getElementById('f-search').value || '').trim();
+  const fWords = fSearchRaw ? fSearchRaw.toLowerCase().split(/\s+/).filter(Boolean) : [];
+  const hasFilter = fLine || fPhases.length || fResp || fStatus || fLevel || fWords.length;
+
+  // Step 1: direct matches
+  const matchedIdx = new Set();
+  displayData.forEach((r, i) => {
+    if (fLine            && r.sheet       !== fLine)             return;
+    if (fPhases.length   && !fPhases.includes(r.phase))          return;
+    if (fResp   && r.responsible !== fResp)   return;
+    if (fStatus && r.status      !== fStatus) return;
+    if (fLevel  && r.level       !== fLevel)  return;
+    if (fWords.length) {
+      // Searchable text: task name + wbs code + responsible + comment
+      const haystack = [r.task, r.wbs, r.responsible, r.comment].join(' ').toLowerCase();
+      if (!fWords.every(w => haystack.includes(w))) return;
+    }
+    matchedIdx.add(i);
+  });
+
+  // Step 2: include ancestors
+  const ancestorIdx = new Set();
+  if (hasFilter) {
+    matchedIdx.forEach(i => {
+      const r = displayData[i];
+      for (let j = i - 1; j >= 0; j--) {
+        const p = displayData[j];
+        if (p.sheet !== r.sheet) break;
+        if (p.level < r.level && r.wbs.startsWith(p.wbs + '.')) {
+          if (!matchedIdx.has(j)) ancestorIdx.add(j);
+        }
+      }
+    });
+  }
+
+  const visible = displayData
+    .map((r, i) => ({...r, idx: i, isAncestor: ancestorIdx.has(i)}))
+    .filter(r => !hasFilter || matchedIdx.has(r.idx) || ancestorIdx.has(r.idx));
+
+  const tbody = document.getElementById('wbs-body');
+  tbody.innerHTML = '';
+  let currentSheet = null;
+
+  visible.forEach(r => {
+    if (r.sheet !== currentSheet) {
+      currentSheet = r.sheet;
+      const hdr = document.createElement('tr');
+      hdr.className = 'sheet-header';
+      hdr.innerHTML = `<td colspan="6">&#128295; ${r.sheet}</td>`;
+      tbody.appendChild(hdr);
+    }
+    const tr = document.createElement('tr');
+    const lvlClass = r.level >= 1 && r.level <= 3 ? `lvl-${r.level}` : '';
+    tr.className = [lvlClass, r.isAncestor ? 'parent-context' : ''].filter(Boolean).join(' ');
+    const key = (r._sheetName||r.sheet) + '_' + r._rowIdx;
+    tr.setAttribute('data-key', key);
+
+    const indent = `indent-${Math.min(r.level, 5)}`;
+    const isParentRow = hasChildren(r, displayData);
+    let dateHtml;
+    if (isOnline) {
+      if (isParentRow) {
+        // Parent: show earliest child date (read-only, computed)
+        const computed = getEarliestChildDate(r, displayData);
+        dateHtml = computed ? `<span class="date-auto">${computed}</span>` : '';
+      } else {
+        // Leaf: show date with calendar edit button
+        const displayDate = r.deadline && r.deadline !== 'N/A' ? r.deadline : '';
+        dateHtml = `<span class="date-cell">
+          <span class="date-text">${displayDate || '—'}</span>
+          <button class="date-cal-btn" onclick="openCalendar(event,'${key}')" title="Edit date">📅</button>
+        </span>`;
+      }
+    } else {
+      dateHtml = r.deadline && r.deadline !== 'N/A' ? r.deadline : '';
+    }
+    let respHtml;
+    if (isOnline) {
+      const respOptions = ['', ...getAllResponsibles()]
+        .map(v => `<option value="${v}" ${r.responsible===v?'selected':''}>${v}</option>`).join('');
+      respHtml = `<select class="resp-input status-select" onchange="onResponsibleChange(this,'${key}')">${respOptions}</select>`;
+    } else {
+      respHtml = r.responsible ? `<span class="chip">${r.responsible}</span>` : '';
+    }
+
+    let statusHtml, commentHtml;
+    if (isOnline) {
+      if (isParentRow) {
+        // Parent: show computed status as read-only badge (auto-derived from children)
+        const computed = getEffectiveStatus(r, displayData);
+        statusHtml = computed
+          ? `<span class="badge ${badgeClass(computed)} status-auto">${computed}</span>`
+          : `<span class="status-auto" style="color:#aaa">—</span>`;
+      } else {
+        // Leaf: editable select
+        const isLegacy = r.status && !STATUS_OPTIONS.includes(r.status);
+        const opts = [
+          ...(isLegacy ? [`<option value="${r.status}" selected disabled>${r.status}</option>`] : []),
+          ...STATUS_OPTIONS.map(o => `<option value="${o}" ${(!isLegacy && r.status===o)?'selected':''}>${o}</option>`)
+        ].join('');
+        statusHtml = `<select class="status-select" onchange="onStatusChange(this,'${key}')">${opts}</select>`;
+      }
+      const safeComment = (r.comment||'').replace(/"/g,'&quot;');
+      commentHtml = `<input class="comment-input" type="text" value="${safeComment}"
+        placeholder="Add comment..." oninput="onCommentChange(this,'${key}')">`;
+    } else {
+      statusHtml = r.status ? `<span class="badge ${badgeClass(r.status)}">${r.status}</span>` : '';
+      commentHtml = `<span style="color:#555;font-size:11px">${r.comment||''}</span>`;
+    }
+
+    const addBtn = isOnline
+      ? `<button class="add-sub-btn" onclick="openAddModalForRow('${key}')" title="Add subtask">+</button>`
+      : '';
+    tr.innerHTML = `
+      <td class="wbs-col">${r.wbs}</td>
+      <td class="task-col"><span class="task-cell-wrap"><span class="${indent} task-name-link" onclick="openEditModal('${key}')">${r.task}</span>${addBtn}</span></td>
+      <td class="date-col">${dateHtml}</td>
+      <td class="resp-col">${respHtml}</td>
+      <td class="status-col">${statusHtml}</td>
+      <td class="comments-col">${commentHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  const total = hasFilter ? matchedIdx.size : displayData.length;
+  document.getElementById('results-count').textContent =
+    hasFilter
+      ? `${visible.length} rows (${matchedIdx.size} matched + ${ancestorIdx.size} parents)`
+      : `${displayData.length} tasks`;
+
+  document.getElementById('no-results').style.display  = visible.length === 0 ? 'block' : 'none';
+  document.getElementById('wbs-table').style.display   = visible.length === 0 ? 'none' : '';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EDIT HANDLERS
+// ═══════════════════════════════════════════════════════════════
+// Update status badges of all ancestor rows of a changed leaf, without full re-render
+function refreshParentBadges(changedRow) {
+  // Walk up the WBS tree and update badge for each visible ancestor
+  const parts = (changedRow.wbs || '').split('.');
+  for (let depth = parts.length - 1; depth >= 1; depth--) {
+    const ancestorWbs = parts.slice(0, depth).join('.');
+    const ancestor = displayData.find(r => r.sheet === changedRow.sheet && r.wbs === ancestorWbs);
+    if (!ancestor) continue;
+    const aKey = (ancestor._sheetName || ancestor.sheet) + '_' + ancestor._rowIdx;
+    const cell = document.querySelector(`[data-key="${aKey}"] .status-col`);
+    if (!cell) continue;
+    const computed = getEffectiveStatus(ancestor, displayData);
+    cell.innerHTML = computed
+      ? `<span class="badge ${badgeClass(computed)} status-auto">${computed}</span>`
+      : `<span class="status-auto" style="color:#aaa">—</span>`;
+  }
+}
+
+function onStatusChange(sel, key) {
+  const row = getRowByKey(key);
+  if (!row) return;
+  const commentEl = document.querySelector(`[data-key="${key}"] .comment-input`);
+  const comment = commentEl ? commentEl.value : (row.comment || '');
+  row.status = sel.value;
+  saveCell(row, sel.value, comment);
+  // Re-render parent status badges (computed from children)
+  refreshParentBadges(row);
+}
+
+function onCommentChange(input, key) {
+  const row = getRowByKey(key);
+  if (!row) return;
+  const statusEl = document.querySelector(`[data-key="${key}"] .status-select`);
+  const status = statusEl ? statusEl.value : (row.status || '');
+  row.comment = input.value;
+  saveCell(row, status, input.value);
+}
+
+function onResponsibleChange(input, key) {
+  const row = getRowByKey(key);
+  if (!row) return;
+  row.responsible = input.value;
+  saveResponsible(row, input.value);
+}
+
+async function saveResponsible(row, newResponsible) {
+  const key = row._sheetName + '_' + row._rowIdx;
+  const respTimerKey = 'resp_' + key;
+  clearTimeout(saveTimers[respTimerKey]);
+  saveTimers[respTimerKey] = setTimeout(async () => {
+    const respEl = document.querySelector(`[data-key="${key}"] .resp-input`);
+    if (respEl) respEl.setAttribute('disabled', 'true');
+    try {
+      const token = await getToken();
+      const itemId = await getItemId(token);
+      const addr = `F${row._rowIdx}`;
+      const url = `${workbookSheetBase(itemId, row._sheetName)}/range(address='${addr}')`;
+      const resp = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ values: [[newResponsible]] })
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      showToast("&#10003; Saved", "success");
+      saveToCache(displayData);
+    } catch(e) {
+      showToast("Save error: " + e.message, "error");
+    } finally {
+      if (respEl) respEl.removeAttribute('disabled');
+    }
+  }, 800);
+}
+
+function getRowByKey(key) {
+  return displayData.find(r => {
+    const k = (r._sheetName||r.sheet) + '_' + r._rowIdx;
+    return k === key;
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════
+// BOOT — load MSAL then init; fallback to static data if unavailable
+// ═══════════════════════════════════════════════════════════════
+(function bootApp() {
+  // file:// — no OAuth possible, show static/cached data immediately
+  if (window.location.protocol === 'file:') {
+    var c = loadFromCache();
+    if (c) useData(c.data, false, c.time);
+    else useStaticData();
+    showToast('Offline mode — open via SharePoint URL to sign in', 'info');
+    return;
+  }
+
+  function onMsalLoaded() { initMsal(); }
+
+  function loadScript(src, onload, onerror) {
+    var s = document.createElement('script');
+    s.src = src;
+    s.onload = onload;
+    s.onerror = onerror;
+    document.head.appendChild(s);
+  }
+
+  function onAllCdnsFailed() {
+    var c = loadFromCache();
+    if (c) useData(c.data, false, c.time);
+    else useStaticData();
+    showToast('Authorization server unavailable — offline mode', 'info');
+  }
+
+  // Tier 1: self-hosted on SharePoint (same-origin, bypasses corporate firewall)
+  // Tier 2: jsdelivr CDN
+  // Tier 3: offline fallback
+  dbg('Loading MSAL (self-hosted)...');
+  loadScript('./msal-browser.min.js', onMsalLoaded, function() {
+    dbg('Loading MSAL (jsdelivr CDN)...');
+    loadScript('https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.39.0/lib/msal-browser.min.js', onMsalLoaded, onAllCdnsFailed);
+  });
+})();
+</script>
+</body>
+</html>
