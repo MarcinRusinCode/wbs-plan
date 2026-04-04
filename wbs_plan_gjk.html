@@ -35,6 +35,109 @@
   --transition-spring: 0.35s cubic-bezier(0.175,0.885,0.32,1.275);
 }
 
+/* ── Dark mode ── */
+[data-theme="dark"] {
+  --gjk-primary-blue: #4A8AC4;
+  --gjk-dark-blue: #2A7FB8;
+  --gjk-accent: #0A84FF;
+  --gjk-dark-text: #F2F2F7;
+  --gjk-secondary-text: #98989F;
+  --gjk-bg: #1C1C1E;
+  --gjk-card-bg: #2C2C2E;
+  --gjk-border: rgba(255,255,255,0.08);
+  --gjk-border-input: rgba(255,255,255,0.14);
+  --gjk-l1-fill: #1E2E3D;
+  --gjk-l2-fill: #1A2836;
+  --gjk-l3-fill: #16222E;
+  --gjk-l4-fill: #131E28;
+}
+[data-theme="dark"] header {
+  background: rgba(20,60,92,0.95);
+}
+[data-theme="dark"] #filter-bar {
+  background: rgba(44,44,46,0.90);
+  border-bottom-color: rgba(255,255,255,0.06);
+}
+[data-theme="dark"] .ms-dropdown,
+[data-theme="dark"] #login-card,
+[data-theme="dark"] #add-task-card,
+[data-theme="dark"] #edit-task-card,
+[data-theme="dark"] .settings-card {
+  background: #3A3A3C; border-color: rgba(255,255,255,0.08);
+}
+[data-theme="dark"] .ms-toggle,
+[data-theme="dark"] .filter-group select,
+[data-theme="dark"] #f-search,
+[data-theme="dark"] .status-select,
+[data-theme="dark"] .comment-input,
+[data-theme="dark"] .resp-input,
+[data-theme="dark"] .at-field input,
+[data-theme="dark"] .at-field select,
+[data-theme="dark"] .settings-add-row input,
+[data-theme="dark"] #settings-btn {
+  background: #3A3A3C; color: var(--gjk-dark-text);
+  border-color: rgba(255,255,255,0.14);
+}
+[data-theme="dark"] table {
+  background: #2C2C2E;
+}
+[data-theme="dark"] thead th {
+  background: #1A4A70;
+}
+[data-theme="dark"] tr.sheet-header td {
+  background: #143858;
+}
+[data-theme="dark"] .badge-done        { background: #0D3D2E; color: #34C88A; }
+[data-theme="dark"] .badge-progress    { background: #3D2E00; color: #FFD60A; }
+[data-theme="dark"] .badge-notstarted  { background: #3A3A3C; color: var(--gjk-secondary-text); }
+[data-theme="dark"] .badge-onhold      { background: #3D1A00; color: #FF9F0A; }
+[data-theme="dark"] .badge-other       { background: #3A3A3C; color: var(--gjk-secondary-text); }
+[data-theme="dark"] #cache-bar { background: rgba(61,46,0,0.9); border-color: rgba(255,214,10,0.2); color: #FFD60A; }
+[data-theme="dark"] .chip { background: rgba(74,138,196,0.15); border-color: rgba(74,138,196,0.25); }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --gjk-primary-blue: #4A8AC4;
+    --gjk-dark-blue: #2A7FB8;
+    --gjk-accent: #0A84FF;
+    --gjk-dark-text: #F2F2F7;
+    --gjk-secondary-text: #98989F;
+    --gjk-bg: #1C1C1E;
+    --gjk-card-bg: #2C2C2E;
+    --gjk-border: rgba(255,255,255,0.08);
+    --gjk-border-input: rgba(255,255,255,0.14);
+    --gjk-l1-fill: #1E2E3D;
+    --gjk-l2-fill: #1A2836;
+    --gjk-l3-fill: #16222E;
+    --gjk-l4-fill: #131E28;
+  }
+  :root:not([data-theme="light"]) header { background: rgba(20,60,92,0.95); }
+  :root:not([data-theme="light"]) #filter-bar { background: rgba(44,44,46,0.90); border-bottom-color: rgba(255,255,255,0.06); }
+  :root:not([data-theme="light"]) .ms-dropdown,
+  :root:not([data-theme="light"]) #login-card,
+  :root:not([data-theme="light"]) #add-task-card,
+  :root:not([data-theme="light"]) #edit-task-card,
+  :root:not([data-theme="light"]) .settings-card { background: #3A3A3C; border-color: rgba(255,255,255,0.08); }
+  :root:not([data-theme="light"]) .ms-toggle,
+  :root:not([data-theme="light"]) .filter-group select,
+  :root:not([data-theme="light"]) #f-search,
+  :root:not([data-theme="light"]) .status-select,
+  :root:not([data-theme="light"]) .comment-input,
+  :root:not([data-theme="light"]) .resp-input,
+  :root:not([data-theme="light"]) .at-field input,
+  :root:not([data-theme="light"]) .at-field select,
+  :root:not([data-theme="light"]) .settings-add-row input,
+  :root:not([data-theme="light"]) #settings-btn { background: #3A3A3C; color: #F2F2F7; border-color: rgba(255,255,255,0.14); }
+  :root:not([data-theme="light"]) table { background: #2C2C2E; }
+  :root:not([data-theme="light"]) thead th { background: #1A4A70; }
+  :root:not([data-theme="light"]) tr.sheet-header td { background: #143858; }
+  :root:not([data-theme="light"]) .badge-done { background: #0D3D2E; color: #34C88A; }
+  :root:not([data-theme="light"]) .badge-progress { background: #3D2E00; color: #FFD60A; }
+  :root:not([data-theme="light"]) .badge-notstarted, :root:not([data-theme="light"]) .badge-other { background: #3A3A3C; color: #98989F; }
+  :root:not([data-theme="light"]) .badge-onhold { background: #3D1A00; color: #FF9F0A; }
+  :root:not([data-theme="light"]) .chip { background: rgba(74,138,196,0.15); border-color: rgba(74,138,196,0.25); }
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text',
@@ -228,7 +331,7 @@ thead th {
   padding: 10px 10px; text-align: left;
   font-size: 10px; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.6px; white-space: nowrap;
-  position: sticky; top: 96px;
+  position: sticky; top: 112px; z-index: 3;
 }
 thead th:first-child { width: 36px; text-align: center; }
 tbody tr { border-bottom: 0.5px solid rgba(0,0,0,0.04); transition: background var(--transition-fast); }
@@ -633,6 +736,7 @@ tr.sheet-header td {
     <button id="refresh-btn" class="header-btn" onclick="fetchExcelData()" title="Fetch latest data from SharePoint">&#8635; Refresh</button>
     <button id="login-btn-header" class="header-btn primary" onclick="login()" style="display:none">Sign in</button>
     <button id="logout-btn" class="header-btn" onclick="logout()" style="display:none">Sign out</button>
+    <button id="theme-toggle" class="header-btn" onclick="toggleTheme()" title="Toggle dark/light mode">&#9790;</button>
   </div>
 </header>
 
@@ -1126,6 +1230,25 @@ async function tryAutoLogin() {
     else useStaticData();
   }
 }
+
+function toggleTheme() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark' ||
+    (!html.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const next = isDark ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('gjk_theme', next);
+  document.getElementById('theme-toggle').textContent = next === 'dark' ? '☀' : '☾';
+}
+
+(function initTheme() {
+  const saved = localStorage.getItem('gjk_theme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    const btn = document.getElementById('theme-toggle');
+    if (btn) btn.textContent = saved === 'dark' ? '☀' : '☾';
+  }
+})();
 
 async function login() {
   if (!msalInstance) { showToast("MSAL nie jest zainicjalizowany", "error"); return; }
