@@ -512,6 +512,40 @@ tr.status-void td .comment-input { opacity: 0.55; }
   color: var(--gjk-primary-blue); border: 0.5px solid rgba(53,113,165,0.15);
 }
 
+/* Date source indicator */
+.date-src-icon { display:inline-flex; align-items:center; justify-content:center; width:14px; height:14px; border-radius:3px; font-size:9px; font-weight:700; flex-shrink:0; margin-right:3px; vertical-align:middle; }
+.date-src-manual { background:rgba(53,113,165,0.12); color:var(--gjk-primary-blue); }
+.date-src-auto   { background:rgba(48,209,88,0.15); color:#0D7A5F; font-style:italic; }
+
+/* Dependency chips in table */
+td.deps-col { min-width:80px; max-width:160px; }
+.dep-chips { display:flex; flex-wrap:wrap; gap:3px; }
+.dep-chip { background:rgba(53,113,165,0.08); border-radius:4px; padding:1px 6px; font-size:10px; color:var(--gjk-primary-blue); border:0.5px solid rgba(53,113,165,0.2); font-family:'SF Mono',Menlo,Consolas,monospace; white-space:nowrap; }
+
+/* Dependency picker in modal */
+.dep-section { border-top:0.5px solid var(--gjk-border); margin-top:14px; padding-top:12px; grid-column:1/-1; }
+.dep-section-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.dep-section-hdr span { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px; color:var(--gjk-secondary-text); }
+.dep-add-btn { height:22px; padding:0 10px; border-radius:20px; border:0.5px solid var(--gjk-border-input); background:var(--gjk-card-bg); font-size:11px; cursor:pointer; color:var(--gjk-secondary-text); font-family:inherit; transition:all var(--transition-fast); }
+.dep-add-btn:hover { border-color:var(--gjk-primary-blue); color:var(--gjk-primary-blue); }
+.dep-chips-selected { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; min-height:0; }
+.dep-sel-chip { background:rgba(53,113,165,0.08); border-radius:20px; padding:2px 8px; font-size:11px; color:var(--gjk-primary-blue); border:0.5px solid rgba(53,113,165,0.2); display:inline-flex; align-items:center; gap:4px; }
+.dep-sel-chip button { background:none; border:none; cursor:pointer; padding:0 2px; font-size:11px; color:var(--gjk-secondary-text); line-height:1; transition:color var(--transition-fast); }
+.dep-sel-chip button:hover { color:#FF3B30; }
+.dep-picker-body { display:none; }
+.dep-picker-body.open { display:block; }
+.dep-search { width:100%; border:1px solid var(--gjk-border-input); border-radius:var(--radius-sm); padding:0 8px; height:28px; font-size:11px; outline:none; font-family:inherit; background:var(--gjk-card-bg); color:var(--gjk-dark-text); margin-bottom:6px; box-sizing:border-box; transition:border-color var(--transition-fast),box-shadow var(--transition-fast); }
+.dep-search:focus { border-color:var(--gjk-accent); box-shadow:0 0 0 3px rgba(0,113,227,0.12); }
+.dep-task-list { max-height:160px; overflow-y:auto; border:0.5px solid var(--gjk-border); border-radius:var(--radius-sm); margin-bottom:8px; }
+.dep-task-item { display:flex; align-items:center; gap:8px; padding:5px 10px; border-bottom:0.5px solid var(--gjk-border); cursor:pointer; transition:background var(--transition-fast); }
+.dep-task-item:last-child { border-bottom:none; }
+.dep-task-item:hover { background:rgba(0,113,227,0.04); }
+.dep-task-item input[type=checkbox] { width:13px; height:13px; cursor:pointer; accent-color:var(--gjk-primary-blue); flex-shrink:0; }
+.dep-task-wbs { font-family:'SF Mono',Menlo,Consolas,monospace; font-size:10px; color:var(--gjk-primary-blue); min-width:48px; flex-shrink:0; }
+.dep-task-name { font-size:11px; color:var(--gjk-dark-text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dep-offset-row { display:flex; align-items:center; gap:8px; font-size:11px; color:var(--gjk-secondary-text); }
+.dep-offset-row input[type=number] { width:44px; border:1px solid var(--gjk-border-input); border-radius:var(--radius-sm); padding:0 6px; height:26px; font-size:11px; outline:none; text-align:center; font-family:inherit; background:var(--gjk-card-bg); color:var(--gjk-dark-text); }
+
 /* Toast notifications */
 #toast-container { position: fixed; bottom: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 8px; }
 .toast {
@@ -694,6 +728,22 @@ tr.status-void td .comment-input { opacity: 0.55; }
         <input id="at-comment" type="text" placeholder="Optional comment">
       </div>
     </div>
+    <div class="dep-section">
+      <div class="dep-section-hdr">
+        <span>Depends on</span>
+        <button type="button" class="dep-add-btn" onclick="toggleDepPicker(event,'at')">+ Add</button>
+      </div>
+      <div id="at-dep-chips" class="dep-chips-selected"></div>
+      <div id="at-dep-picker" class="dep-picker-body">
+        <input type="text" class="dep-search" id="at-dep-search" placeholder="Search by WBS or keyword…" oninput="renderDepList('at')">
+        <div id="at-dep-list" class="dep-task-list"></div>
+        <div class="dep-offset-row">
+          <span>Min. offset:</span>
+          <input type="number" id="at-dep-offset" value="1" min="0" max="99">
+          <span>working day(s) after latest dependency</span>
+        </div>
+      </div>
+    </div>
     <div class="at-buttons">
       <button onclick="closeAddModal()">Cancel</button>
       <button class="primary" onclick="submitAddTask()">Add Task</button>
@@ -730,6 +780,22 @@ tr.status-void td .comment-input { opacity: 0.55; }
       <div class="at-field at-full">
         <label>Comment</label>
         <input id="et-comment" type="text" placeholder="Optional comment">
+      </div>
+    </div>
+    <div class="dep-section">
+      <div class="dep-section-hdr">
+        <span>Depends on</span>
+        <button type="button" class="dep-add-btn" onclick="toggleDepPicker(event,'et')">+ Add</button>
+      </div>
+      <div id="et-dep-chips" class="dep-chips-selected"></div>
+      <div id="et-dep-picker" class="dep-picker-body">
+        <input type="text" class="dep-search" id="et-dep-search" placeholder="Search by WBS or keyword…" oninput="renderDepList('et')">
+        <div id="et-dep-list" class="dep-task-list"></div>
+        <div class="dep-offset-row">
+          <span>Min. offset:</span>
+          <input type="number" id="et-dep-offset" value="1" min="0" max="99">
+          <span>working day(s) after latest dependency</span>
+        </div>
       </div>
     </div>
     <div class="at-buttons" style="justify-content:space-between">
@@ -828,6 +894,7 @@ tr.status-void td .comment-input { opacity: 0.55; }
         <th title="Responsible (col G)">Responsible</th>
         <th title="Status (col I)">Status</th>
         <th title="Comments (col J)">Comments</th>
+        <th title="Dependencies (col K)">Depends on</th>
       </tr>
     </thead>
     <tbody id="wbs-body"></tbody>
@@ -1350,6 +1417,13 @@ function openEditModal(key) {
   // Delete only available for leaf tasks (no children)
   document.getElementById('et-delete-btn').style.visibility = isParent ? 'hidden' : 'visible';
 
+  // Load dependencies
+  _etDeps = row.dependencies ? row.dependencies.split(',').map(s => s.trim()).filter(Boolean) : [];
+  renderDepChips('et');
+  const etPicker = document.getElementById('et-dep-picker'); if (etPicker) etPicker.classList.remove('open');
+  const etOffset = document.getElementById('et-dep-offset'); if (etOffset) etOffset.value = row.depOffset || 1;
+  const etAddBtn = document.querySelector('[onclick*="toggleDepPicker(event,\'et\')"]'); if (etAddBtn) etAddBtn.textContent = '+ Add';
+
   document.getElementById('edit-task-modal').style.display = 'flex';
 }
 
@@ -1371,8 +1445,11 @@ async function submitEditTask() {
 
   if (!newTask) { showToast('Task name is required', 'error'); return; }
 
+  const newDeps = _etDeps.join(',');
+  const newDepOffset = parseInt(document.getElementById('et-dep-offset')?.value) || 1;
   // Update in-memory
   row.task = newTask; row.responsible = newResp; row.comment = newComment;
+  row.dependencies = newDeps; row.depOffset = newDepOffset;
   if (!isParent) { row.deadline = newDate; row.status = newStatus; }
 
   closeEditModal();
@@ -1383,9 +1460,9 @@ async function submitEditTask() {
     const token  = await getToken();
     const itemId = await getItemId(token);
     const base   = workbookSheetBase(itemId, row._sheetName);
-    // Excel columns: A=Lvl, B=WBS, C=Task, D='', E='', F=Responsible, G=Deadline, H='', I=Status, J=Comment
-    const values = [[row.level, row.wbs, newTask, '', '', newResp, newDate, '', newStatus, newComment]];
-    const wr = await fetch(`${base}/range(address='A${row._rowIdx}:J${row._rowIdx}')`, {
+    // Excel columns: A=Lvl, B=WBS, C=Task, D='', E='', F=Responsible, G=Deadline, H='', I=Status, J=Comment, K=Deps, L=DepOffset
+    const values = [[row.level, row.wbs, newTask, '', '', newResp, newDate, '', newStatus, newComment, newDeps, newDepOffset]];
+    const wr = await fetch(`${base}/range(address='A${row._rowIdx}:L${row._rowIdx}')`, {
       method: 'PATCH',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ values })
@@ -1457,6 +1534,11 @@ function openAddModal() {
   const atTxt = document.getElementById('at-date-text');
   if (atTxt) { atTxt.textContent = '— select date —'; atTxt.style.color = '#C7C7CC'; }
   document.getElementById('at-comment').value = '';
+  _atDeps = [];
+  const atChips = document.getElementById('at-dep-chips'); if (atChips) atChips.innerHTML = '';
+  const atPicker = document.getElementById('at-dep-picker'); if (atPicker) { atPicker.classList.remove('open'); }
+  const atOffset = document.getElementById('at-dep-offset'); if (atOffset) atOffset.value = '1';
+  const atAddBtn = document.querySelector('[onclick*="toggleDepPicker(event,\'at\')"]'); if (atAddBtn) atAddBtn.textContent = '+ Add';
   document.getElementById('add-task-modal').style.display = 'flex';
 }
 
@@ -1592,8 +1674,10 @@ async function submitAddTask() {
     // Step 2: write data
     // Excel columns: A=Lvl, B=WBS Code, C=Task/Scope, D=Description, E=Deliverables,
     //                F=Responsible, G=Deadline, H=Decision Gate, I=Status, J=Comment
-    const values = [[newLevel, newWbs, taskName, '', '', resp, dateStr, '', status, comment]];
-    const wr = await fetchWithTimeout(`${base}/range(address='A${insertRow}:J${insertRow}')`,
+    const depStr = _atDeps.join(',');
+    const depOffset = parseInt(document.getElementById('at-dep-offset')?.value) || 1;
+    const values = [[newLevel, newWbs, taskName, '', '', resp, dateStr, '', status, comment, depStr, depOffset]];
+    const wr = await fetchWithTimeout(`${base}/range(address='A${insertRow}:L${insertRow}')`,
       { method: 'PATCH', headers, body: JSON.stringify({ values }) }, 15000);
     if (!wr.ok) { const t = await wr.text(); throw new Error(`Write ${wr.status}: ${t}`); }
 
@@ -1665,8 +1749,10 @@ function parseSheetRows(sheetName, values) {
       phase:       getPhase(wbsCode),
       deadline:    deadline,
       responsible: responsible,
-      status:      String(row[8] || '').trim(),   // col I — Status
-      comment:     String(row[9] || '').trim(),   // col J — Link to File
+      status:       String(row[8]  || '').trim(),  // col I — Status
+      comment:      String(row[9]  || '').trim(),  // col J — Comment
+      dependencies: String(row[10] || '').trim(),  // col K — Dependencies (comma-sep WBS)
+      depOffset:    parseInt(row[11]) || 1,         // col L — Dep offset (working days)
       _sheetName:  sheetName,
       _rowIdx:     i + 1   // 1-based Excel row number
     });
@@ -2061,6 +2147,110 @@ function convertFromInputDate(yyyymmdd) {
   return p.length === 3 ? `${p[2]}-${p[1]}-${p[0]}` : '';
 }
 
+// ─── Dependency / effective-date utilities ──────────────────
+function parseDD_MM_YYYY(s) {
+  if (!s || typeof s !== 'string') return null;
+  const p = s.split('-');
+  if (p.length !== 3) return null;
+  const d = new Date(`${p[2]}-${p[1]}-${p[0]}`);
+  return isNaN(d.getTime()) ? null : d;
+}
+function addWorkingDays(date, days) {
+  const result = new Date(date.getTime());
+  let added = 0;
+  while (added < Math.abs(days)) {
+    result.setDate(result.getDate() + (days >= 0 ? 1 : -1));
+    const dow = result.getDay();
+    if (dow !== 0 && dow !== 6) added++;
+  }
+  return result;
+}
+function formatDateFromJS(d) {
+  if (!d) return '';
+  return `${String(d.getDate()).padStart(2,'0')}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getFullYear()}`;
+}
+function getEffectiveDate(row, data) {
+  const manualDate = parseDD_MM_YYYY(row.deadline);
+  let depDate = null;
+  if (row.dependencies) {
+    const wbsList = row.dependencies.split(',').map(s => s.trim()).filter(Boolean);
+    const depDates = wbsList.map(wbs => {
+      const dep = data.find(r => r.wbs === wbs);
+      return dep ? parseDD_MM_YYYY(dep.deadline) : null;
+    }).filter(Boolean);
+    if (depDates.length) {
+      const maxDep = new Date(Math.max(...depDates.map(d => d.getTime())));
+      depDate = addWorkingDays(maxDep, Math.max(1, row.depOffset || 1));
+    }
+  }
+  if (!manualDate && !depDate) return { date: row.deadline || '', source: 'none' };
+  if (!manualDate) return { date: formatDateFromJS(depDate), source: 'auto' };
+  if (!depDate) return { date: row.deadline || '', source: 'manual' };
+  return depDate.getTime() > manualDate.getTime()
+    ? { date: formatDateFromJS(depDate), source: 'auto' }
+    : { date: row.deadline || '', source: 'manual' };
+}
+// ────────────────────────────────────────────────────────────
+
+// ─── Dependency picker ───────────────────────────────────────
+let _atDeps = [];
+let _etDeps = [];
+
+function toggleDepPicker(event, prefix) {
+  event.stopPropagation();
+  const body = document.getElementById(`${prefix}-dep-picker`);
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  event.currentTarget.textContent = isOpen ? '+ Add' : '− Hide';
+  if (!isOpen) renderDepList(prefix);
+}
+
+function renderDepList(prefix) {
+  const search = (document.getElementById(`${prefix}-dep-search`)?.value || '').toLowerCase();
+  const deps = prefix === 'at' ? _atDeps : _etDeps;
+  const line = prefix === 'at'
+    ? (document.getElementById('at-line')?.value || '')
+    : (getRowByKey(_editKey)?.sheet || '');
+  let tasks = line ? displayData.filter(r => r.sheet === line) : displayData;
+  if (search) tasks = tasks.filter(r => r.task.toLowerCase().includes(search) || r.wbs.toLowerCase().includes(search));
+  if (prefix === 'et' && _editKey) { const self = getRowByKey(_editKey); if (self) tasks = tasks.filter(r => r.wbs !== self.wbs); }
+  const listEl = document.getElementById(`${prefix}-dep-list`);
+  if (!tasks.length) { listEl.innerHTML = '<div style="padding:8px 12px;color:#aaa;font-size:11px">No tasks found</div>'; return; }
+  listEl.innerHTML = tasks.slice(0, 60).map(r =>
+    `<label class="dep-task-item">
+      <input type="checkbox" ${deps.includes(r.wbs)?'checked':''} onchange="toggleDep('${prefix}','${r.wbs.replace(/'/g,"\\'")}',this.checked)">
+      <span class="dep-task-wbs">${r.wbs}</span>
+      <span class="dep-task-name">${r.task}</span>
+    </label>`
+  ).join('');
+}
+
+function toggleDep(prefix, wbs, checked) {
+  const deps = prefix === 'at' ? _atDeps : _etDeps;
+  if (checked && !deps.includes(wbs)) deps.push(wbs);
+  else if (!checked) { const i = deps.indexOf(wbs); if (i >= 0) deps.splice(i, 1); }
+  renderDepChips(prefix);
+}
+
+function removeDep(prefix, wbs) {
+  const deps = prefix === 'at' ? _atDeps : _etDeps;
+  const i = deps.indexOf(wbs); if (i >= 0) deps.splice(i, 1);
+  renderDepChips(prefix);
+  renderDepList(prefix);
+}
+
+function renderDepChips(prefix) {
+  const deps = prefix === 'at' ? _atDeps : _etDeps;
+  const el = document.getElementById(`${prefix}-dep-chips`);
+  if (!el) return;
+  el.innerHTML = deps.map(wbs => {
+    const task = displayData.find(r => r.wbs === wbs);
+    const label = task ? `${wbs} — ${task.task.slice(0,28)}${task.task.length>28?'…':''}` : wbs;
+    return `<span class="dep-sel-chip">${label}<button type="button" onclick="removeDep('${prefix}','${wbs.replace(/'/g,"\\'")}')">✕</button></span>`;
+  }).join('');
+}
+// ─────────────────────────────────────────────────────────────
+
 function getEarliestChildDate(row, data) {
   // Returns LATEST date among all descendants (parent deadline = latest child deadline)
   const children = data.filter(r =>
@@ -2451,9 +2641,14 @@ function render() {
         const displayDate = r.deadline && r.deadline !== 'N/A' ? r.deadline : '—';
         dateHtml = `<span class="date-text" style="opacity:.7">${displayDate}</span>`;
       } else {
-        const displayDate = r.deadline && r.deadline !== 'N/A' ? r.deadline : '';
+        const { date: effDate, source: dateSrc } = getEffectiveDate(r, displayData);
+        const srcIcon = dateSrc === 'manual'
+          ? `<span class="date-src-icon date-src-manual" title="Manual date">✏</span>`
+          : dateSrc === 'auto'
+            ? `<span class="date-src-icon date-src-auto" title="Auto from dependencies">a</span>`
+            : '';
         dateHtml = `<span class="date-cell">
-          <span class="date-text">${displayDate || '—'}</span>
+          ${srcIcon}<span class="date-text">${effDate || '—'}</span>
           <button class="date-cal-btn" onclick="openCalendar(event,'${key}')" title="Edit date">📅</button>
         </span>`;
       }
@@ -2502,6 +2697,9 @@ function render() {
     const addBtn = isOnline
       ? `<button class="add-sub-btn" onclick="openAddModalForRow('${key}')" title="Add subtask">+</button>`
       : '';
+    const depsHtml = r.dependencies
+      ? r.dependencies.split(',').map(w => w.trim()).filter(Boolean).map(w => `<span class="dep-chip">${w}</span>`).join('')
+      : '';
     tr.innerHTML = `
       <td class="wbs-col">${r.wbs}</td>
       <td class="task-col"><span class="task-cell-wrap">${statusIcon}<span class="${indent} task-name-link" onclick="openEditModal('${key}')">${r.task}</span>${addBtn}</span></td>
@@ -2509,6 +2707,7 @@ function render() {
       <td class="resp-col">${respHtml}</td>
       <td class="status-col">${statusHtml}</td>
       <td class="comments-col">${commentHtml}</td>
+      <td class="deps-col"><div class="dep-chips">${depsHtml}</div></td>
     `;
     tbody.appendChild(tr);
   });
