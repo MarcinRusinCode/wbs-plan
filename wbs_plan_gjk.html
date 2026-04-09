@@ -469,6 +469,42 @@ tr.sheet-header td {
 .resp-input:focus { border-color: var(--gjk-accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
 .resp-input.saving { opacity: .5; }
 
+/* Row selects inherit row background (fix #2) */
+tr.lvl-1 td select,
+tr.lvl-1 td .comment-input { background-color: var(--gjk-l2-fill); }
+tr.lvl-2 td select,
+tr.lvl-2 td .comment-input { background-color: var(--gjk-l3-fill); }
+tr.lvl-3 td select,
+tr.lvl-3 td .comment-input { background-color: var(--gjk-l4-fill); }
+
+/* Status icons inline task name */
+.status-icon {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 16px; height: 16px; border-radius: 50%;
+  font-size: 10px; font-weight: 800; flex-shrink: 0; margin-right: 4px; vertical-align: middle;
+}
+.done-icon   { background: #D1F2EB; color: #0D7A5F; }
+.onhold-icon { background: #FFE5D0; color: #B35C00; font-size: 9px; letter-spacing: -1px; }
+
+/* Void row — grey everything out */
+tr.status-void td { color: var(--gjk-secondary-text) !important; }
+tr.status-void td .task-name-link { color: var(--gjk-secondary-text) !important; }
+tr.status-void td select,
+tr.status-void td .comment-input { opacity: 0.55; }
+
+/* Add-modal date wrapper (custom calendar trigger) */
+.at-date-wrap {
+  display: flex; align-items: center; gap: 6px;
+  height: 34px; border: 1px solid var(--gjk-border-input);
+  border-radius: var(--radius-sm); padding: 0 10px;
+  background: var(--gjk-card-bg); font-size: 12px; color: var(--gjk-dark-text);
+  cursor: pointer; transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.at-date-wrap:hover { border-color: var(--gjk-accent); }
+.at-date-wrap:focus-within { border-color: var(--gjk-accent); box-shadow: 0 0 0 3px rgba(0,113,227,0.12); }
+#at-date-text { flex: 1; user-select: none; }
+.at-date-cal-btn { background: none; border: none; cursor: pointer; padding: 0; font-size: 13px; color: var(--gjk-secondary-text); line-height: 1; }
+
 /* Responsible chip (offline view) */
 .chip {
   display: inline-block; background: rgba(53,113,165,0.08);
@@ -639,7 +675,11 @@ tr.sheet-header td {
       </div>
       <div class="at-field">
         <label>Planned Date</label>
-        <input id="at-date" type="date">
+        <input id="at-date" type="hidden">
+        <div class="at-date-wrap" onclick="openAtCalendar(event)" tabindex="0">
+          <span id="at-date-text" style="color:#C7C7CC">— select date —</span>
+          <button type="button" class="at-date-cal-btn" tabindex="-1">📅</button>
+        </div>
       </div>
       <div class="at-field">
         <label>Responsible</label>
@@ -1413,6 +1453,9 @@ function openAddModal() {
   });
   document.getElementById('at-task').value = '';
   document.getElementById('at-date').value = '';
+  _atDateValue = '';
+  const atTxt = document.getElementById('at-date-text');
+  if (atTxt) { atTxt.textContent = '— select date —'; atTxt.style.color = '#C7C7CC'; }
   document.getElementById('at-comment').value = '';
   document.getElementById('add-task-modal').style.display = 'flex';
 }
@@ -1514,7 +1557,6 @@ async function submitAddTask() {
   const p3        = document.getElementById('at-parent3').value;
   const p4        = document.getElementById('at-parent4').value;
   const taskName  = document.getElementById('at-task').value.trim();
-  const dateRaw   = document.getElementById('at-date').value;
   const resp      = document.getElementById('at-responsible').value.trim();
   const status    = document.getElementById('at-status').value;
   const comment   = document.getElementById('at-comment').value.trim();
@@ -1528,8 +1570,7 @@ async function submitAddTask() {
   const insertAfter = findInsertAfter(parentWbs, line);
   if (!insertAfter) { showToast('Cannot determine insertion position', 'error'); return; }
 
-  let dateStr = '';
-  if (dateRaw) { const [y,m,d] = dateRaw.split('-'); dateStr = `${d}-${m}-${y}`; }
+  const dateStr = _atDateValue || ''; // already DD-MM-YYYY from custom calendar
 
   // Map display name back to CONFIG sheet name
   const sheetName = CONFIG.sheets.find(s => normalizeSheetName(s) === line) || line;
@@ -1783,14 +1824,19 @@ function formatDate(val) {
   if (!val) return '';
   const s = String(val).trim();
   if (s === '' || s === '0') return '';
-  // Excel serial date → JS date
+  // Excel serial date → JS date (always correct)
   const num = parseFloat(s);
   if (!isNaN(num) && num > 40000) {
     const d = new Date(Math.round((num - 25569) * 86400000));
-    const dd = String(d.getUTCDate()).padStart(2,'0');
-    const mm = String(d.getUTCMonth()+1).padStart(2,'0');
-    const yy = d.getUTCFullYear();
-    return `${dd}-${mm}-${yy}`;
+    return `${String(d.getUTCDate()).padStart(2,'0')}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${d.getUTCFullYear()}`;
+  }
+  // Normalize text date formats (DD.MM.YYYY, DD/MM/YYYY, DD-MM-YYYY) → DD-MM-YYYY
+  // Always treat first part as day (Norwegian DD.MM.YYYY convention)
+  const m = s.match(/^(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})$/);
+  if (m) {
+    const d = m[1].padStart(2,'0'), mo = m[2].padStart(2,'0');
+    const y = m[3].length === 2 ? '20' + m[3] : m[3];
+    return `${d}-${mo}-${y}`;
   }
   return s;
 }
@@ -1978,6 +2024,21 @@ function addCustomResponsible() {
   if (!custom.includes(name)) { custom.push(name); localStorage.setItem(CUSTOM_RESP_KEY, JSON.stringify(custom)); }
   input.value = '';
   renderSettingsPanel();
+  refreshRespDropdowns(); // fix #1: update all inline responsible dropdowns immediately
+}
+
+function refreshRespDropdowns() {
+  const allResp = ['', ...getAllResponsibles()];
+  document.querySelectorAll('select.resp-input').forEach(sel => {
+    const current = sel.value;
+    sel.innerHTML = allResp.map(v => `<option value="${v}" ${current===v?'selected':''}>${v||'—'}</option>`).join('');
+  });
+  // Also refresh the add-modal dropdown if it's open
+  const atResp = document.getElementById('at-responsible');
+  if (atResp) {
+    const cur = atResp.value;
+    atResp.innerHTML = allResp.map(v => `<option value="${v}" ${cur===v?'selected':''}>${v||'— none —'}</option>`).join('');
+  }
 }
 
 function removeCustomResponsible(name) {
@@ -2001,6 +2062,7 @@ function convertFromInputDate(yyyymmdd) {
 }
 
 function getEarliestChildDate(row, data) {
+  // Returns LATEST date among all descendants (parent deadline = latest child deadline)
   const children = data.filter(r =>
     r.sheet === row.sheet && r.level === row.level + 1 &&
     r.wbs && row.wbs && r.wbs.startsWith(row.wbs + '.')
@@ -2009,14 +2071,13 @@ function getEarliestChildDate(row, data) {
   const childDates = children.map(c => getEarliestChildDate(c, data));
   const valid = childDates.filter(d => d && d !== '—' && d !== 'N/A');
   if (!valid.length) return '';
-  // Parse DD-MM-YYYY and find earliest
   const parsed = valid.map(d => {
     const p = d.split('-');
     return p.length === 3 ? new Date(`${p[2]}-${p[1]}-${p[0]}`) : null;
   }).filter(Boolean);
   if (!parsed.length) return '';
-  const earliest = new Date(Math.min(...parsed.map(d => d.getTime())));
-  return [String(earliest.getDate()).padStart(2,'0'), String(earliest.getMonth()+1).padStart(2,'0'), earliest.getFullYear()].join('-');
+  const latest = new Date(Math.max(...parsed.map(d => d.getTime())));
+  return [String(latest.getDate()).padStart(2,'0'), String(latest.getMonth()+1).padStart(2,'0'), latest.getFullYear()].join('-');
 }
 
 // ── Custom calendar popup ────────────────────────────────────
@@ -2122,6 +2183,25 @@ function calNavMonth(dir) {
   renderCalendar();
 }
 
+let _atDateValue = '';
+
+function openAtCalendar(event) {
+  closeCalendar();
+  let year, month, day = 0;
+  if (_atDateValue && /^\d{2}-\d{2}-\d{4}$/.test(_atDateValue)) {
+    const p = _atDateValue.split('-');
+    day = parseInt(p[0]); month = parseInt(p[1]) - 1; year = parseInt(p[2]);
+  } else { const t = new Date(); year = t.getFullYear(); month = t.getMonth(); }
+  const el = document.createElement('div');
+  el.className = 'cal-popup';
+  document.body.appendChild(el);
+  const btn = event.currentTarget;
+  _calState = { key: '__at__', year, month, selectedDay: day, selectedMonth: month, selectedYear: year, el, btn };
+  renderCalendar();
+  positionCalendar(btn, el);
+  setTimeout(() => document.addEventListener('pointerdown', onCalOutsideClick, true), 0);
+}
+
 function selectCalDay(day) {
   if (!_calState) return;
   const { year, month, key } = _calState;
@@ -2129,14 +2209,20 @@ function selectCalDay(day) {
   const mm = String(month + 1).padStart(2,'0');
   const newDate = `${dd}-${mm}-${year}`;
 
-  // Update selected highlight
   _calState.selectedDay = day;
   _calState.selectedMonth = month;
   _calState.selectedYear = year;
-
   closeCalendar();
 
-  // Update row data and DOM
+  // Add-modal calendar
+  if (key === '__at__') {
+    _atDateValue = newDate;
+    const txt = document.getElementById('at-date-text');
+    if (txt) { txt.textContent = newDate; txt.style.color = ''; }
+    return;
+  }
+
+  // Inline table row calendar
   const row = getRowByKey(key);
   if (!row) return;
   row.deadline = newDate;
@@ -2335,21 +2421,36 @@ function render() {
       tbody.appendChild(hdr);
     }
     const tr = document.createElement('tr');
-    const lvlClass = r.level >= 1 && r.level <= 3 ? `lvl-${r.level}` : '';
-    tr.className = [lvlClass, r.isAncestor ? 'parent-context' : ''].filter(Boolean).join(' ');
     const key = (r._sheetName||r.sheet) + '_' + r._rowIdx;
     tr.setAttribute('data-key', key);
 
-    const indent = `indent-${Math.min(r.level, 5)}`;
     const isParentRow = hasChildren(r, displayData);
+    const effectiveStatus = isParentRow ? getEffectiveStatus(r, displayData) : r.status;
+    const isVoid   = effectiveStatus === 'Void';
+    const isDone   = effectiveStatus === 'Done';
+    const isOnHold = effectiveStatus === 'On hold';
+    const lvlClass = r.level >= 1 && r.level <= 3 ? `lvl-${r.level}` : '';
+    const statusClass = isVoid ? 'status-void' : '';
+    tr.className = [lvlClass, statusClass, r.isAncestor ? 'parent-context' : ''].filter(Boolean).join(' ');
+
+    // Status icon before task name (items 6 & 8)
+    const statusIcon = isDone
+      ? `<span class="status-icon done-icon" title="Done">✓</span>`
+      : isOnHold
+        ? `<span class="status-icon onhold-icon" title="On hold">⏸</span>`
+        : '';
+
+    const indent = `indent-${Math.min(r.level, 5)}`;
     let dateHtml;
     if (isOnline) {
       if (isParentRow) {
-        // Parent: show earliest child date (read-only, computed)
         const computed = getEarliestChildDate(r, displayData);
         dateHtml = computed ? `<span class="date-auto">${computed}</span>` : '';
+      } else if (isDone) {
+        // Done: lock inline date (item 6)
+        const displayDate = r.deadline && r.deadline !== 'N/A' ? r.deadline : '—';
+        dateHtml = `<span class="date-text" style="opacity:.7">${displayDate}</span>`;
       } else {
-        // Leaf: show date with calendar edit button
         const displayDate = r.deadline && r.deadline !== 'N/A' ? r.deadline : '';
         dateHtml = `<span class="date-cell">
           <span class="date-text">${displayDate || '—'}</span>
@@ -2361,9 +2462,14 @@ function render() {
     }
     let respHtml;
     if (isOnline) {
-      const respOptions = ['', ...getAllResponsibles()]
-        .map(v => `<option value="${v}" ${r.responsible===v?'selected':''}>${v}</option>`).join('');
-      respHtml = `<select class="resp-input status-select" onchange="onResponsibleChange(this,'${key}')">${respOptions}</select>`;
+      if (isDone) {
+        // Done: lock inline responsible (item 6)
+        respHtml = r.responsible ? `<span class="chip" style="opacity:.7">${r.responsible}</span>` : '';
+      } else {
+        const respOptions = ['', ...getAllResponsibles()]
+          .map(v => `<option value="${v}" ${r.responsible===v?'selected':''}>${v}</option>`).join('');
+        respHtml = `<select class="resp-input status-select" onchange="onResponsibleChange(this,'${key}')">${respOptions}</select>`;
+      }
     } else {
       respHtml = r.responsible ? `<span class="chip">${r.responsible}</span>` : '';
     }
@@ -2398,7 +2504,7 @@ function render() {
       : '';
     tr.innerHTML = `
       <td class="wbs-col">${r.wbs}</td>
-      <td class="task-col"><span class="task-cell-wrap"><span class="${indent} task-name-link" onclick="openEditModal('${key}')">${r.task}</span>${addBtn}</span></td>
+      <td class="task-col"><span class="task-cell-wrap">${statusIcon}<span class="${indent} task-name-link" onclick="openEditModal('${key}')">${r.task}</span>${addBtn}</span></td>
       <td class="date-col">${dateHtml}</td>
       <td class="resp-col">${respHtml}</td>
       <td class="status-col">${statusHtml}</td>
